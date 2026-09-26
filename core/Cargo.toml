@@ -1,0 +1,23 @@
+[package]
+name = "duinkapel-core"
+version = "0.1.0"
+edition = "2021"
+description = "Puzzle model, solver and generator for Het Geheim van de Duinkapel"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+proptest = "1"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
