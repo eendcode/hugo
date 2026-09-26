@@ -6,9 +6,10 @@
 //! - prefixed glyphs: `S╶` start, `F╴` finish, `t─` trail, `m│` mist lure,
 //!   `0│` / `1│` / `2│` waypoint with that order
 //!
-//! The tray is a string of road glyphs.
+//! The tray is a string of road glyphs; `[─┐/│.]` is a block (rows split
+//! by `/`, `.` for a cell without road).
 
-use crate::model::{Cell, Level, Mask, Scenery, Tile};
+use crate::model::{Block, Cell, Level, Mask, Piece, Scenery, Tile};
 
 const GLYPHS: [(char, Mask); 15] = [
     ('╵', 0b0001),
@@ -53,6 +54,28 @@ fn parse_cell(tok: &str) -> Result<Cell, String> {
     })
 }
 
+pub fn parse_tray(tray: &str) -> Result<Vec<Piece>, String> {
+    let mut out = Vec::new();
+    let mut chars = tray.chars().filter(|c| !c.is_whitespace());
+    while let Some(c) = chars.next() {
+        if c != '[' {
+            out.push(Piece::Single(glyph_tile(c).ok_or(format!("bad tray glyph {c:?}"))?));
+            continue;
+        }
+        let body: String = chars.by_ref().take_while(|&c| c != ']').collect();
+        let rows: Vec<Vec<Option<Tile>>> = body
+            .split('/')
+            .map(|r| r.chars().map(|g| if g == '.' { Ok(None) } else { glyph_tile(g).map(Some).ok_or(format!("bad block glyph {g:?}")) }).collect())
+            .collect::<Result<_, _>>()?;
+        let w = rows.first().map_or(0, Vec::len);
+        if w == 0 || rows.iter().any(|r| r.len() != w) {
+            return Err(format!("ragged block {body:?}"));
+        }
+        out.push(Piece::Block(Block { w: w as u8, h: rows.len() as u8, tiles: rows.into_iter().flatten().collect(), rot: 0 }));
+    }
+    Ok(out)
+}
+
 /// Parse a level; panics-free, returns an error string on bad input.
 pub fn parse(rows: &str, tray: &str) -> Result<Level, String> {
     let grid: Vec<Vec<Cell>> = rows
@@ -66,7 +89,7 @@ pub fn parse(rows: &str, tray: &str) -> Result<Level, String> {
     if grid.iter().any(|r| r.len() != width) {
         return Err("ragged rows".into());
     }
-    let tray = tray.chars().filter(|c| !c.is_whitespace()).map(|c| glyph_tile(c).ok_or(format!("bad tray glyph {c:?}"))).collect::<Result<_, _>>()?;
+    let tray = parse_tray(tray)?;
     Ok(Level {
         width: width as u8,
         height: height as u8,
@@ -126,5 +149,8 @@ mod tests {
         assert_eq!(l.finish(), Some(2));
         assert_eq!(l.tray.len(), 2);
         assert!(l.validate().is_ok());
+        let t = parse_tray("─[┌─/│.]").unwrap();
+        assert_eq!(t.len(), 2);
+        assert!(matches!(&t[1], Piece::Block(b) if b.w == 2 && b.h == 2 && b.tiles[3].is_none()));
     }
 }

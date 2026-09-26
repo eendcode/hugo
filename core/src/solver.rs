@@ -2,21 +2,57 @@
 //! tray pieces for free cells, until it reaches Finish with every treasure
 //! collected (in order, if required), avoiding mist and the Witte Dame.
 //!
-//! A solution is identified by its route and the piece *kinds* on the route's
-//! free cells. Orientations that connect the same way, and unused tray pieces,
-//! do not make distinct solutions.
+//! Blocks (multi-cell pieces) are placed when the route first enters one of
+//! their cells; their other cells then act like fixed road for the rest of
+//! the route.
+//!
+//! A solution is identified by its route plus what covers it: single pieces
+//! by *kind* (orientations that connect the same way are equal), block cells
+//! by their exact tiles. Unused tray pieces do not make distinct solutions.
 
-use crate::model::{Level, Mask, ModelError, Side, State, Tile, TileKind};
+use crate::model::{Block, Level, Mask, ModelError, Piece, Side, State, Tile, TileKind};
 use crate::rules;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
+
+/// A block as placed in a solution.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PlacedBlock {
+    /// Top-left cell.
+    pub anchor: u16,
+    /// The block's shape as placed (rotation already applied).
+    pub shape: Block,
+    /// Covered cells with their tiles (`None` = no road).
+    pub cells: Vec<(u16, Option<Tile>)>,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Solution {
     /// Cells from Start to Finish.
     pub route: Vec<u16>,
-    /// The pieces placed on the route's free cells, oriented to connect it.
+    /// Single pieces on the route's free cells, oriented to connect it.
     pub pieces: Vec<(u16, Tile)>,
+    /// Blocks placed on the board.
+    #[serde(default)]
+    pub blocks: Vec<PlacedBlock>,
+}
+
+impl Solution {
+    /// What covers the board, for telling solutions apart: single pieces by
+    /// kind, block cells by exact tile. Sorted by cell.
+    pub fn signature(&self) -> Vec<(u16, u8)> {
+        let mut sig: Vec<(u16, u8)> = self.pieces.iter().map(|(c, t)| (*c, t.kind as u8)).collect();
+        for b in &self.blocks {
+            sig.extend(b.cells.iter().map(|(c, t)| (*c, 32 + t.map_or(0, |t| t.mask()))));
+        }
+        sig.sort_unstable();
+        sig
+    }
+
+    /// Same route, same pieces (by the rules in [`Solution::signature`]).
+    pub fn same_as(&self, other: &Solution) -> bool {
+        self.route == other.route && self.signature() == other.signature()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -34,24 +70,50 @@ pub const DEFAULT_NODE_BUDGET: u64 = 3_000_000;
 
 const FAR: u32 = u32::MAX / 4;
 
-/// Pieces of the same type are interchangeable. With rotation, the type is
-/// the kind; without rotation, it is the kind plus its fixed orientation.
-fn piece_type(level: &Level, t: Tile) -> Tile {
-    if level.rotatable {
-        Tile::new(t.kind, 0)
-    } else {
-        t.normalized()
+/// Interchangeable pieces share a key. With rotation, a single's key is its
+/// kind and a block's key is its canonical shape; without rotation, the
+/// orientation it comes in is part of the key.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PieceKey {
+    Single(Tile),
+    Block(Block),
+}
+
+pub fn piece_key(level: &Level, piece: &Piece) -> PieceKey {
+    match piece {
+        Piece::Single(t) if level.rotatable => PieceKey::Single(Tile::new(t.kind, 0)),
+        Piece::Single(t) => PieceKey::Single(t.normalized()),
+        Piece::Block(b) if level.rotatable => PieceKey::Block(b.canonical()),
+        Piece::Block(b) => PieceKey::Block(b.shape(b.rot)),
     }
+}
+
+/// A group of interchangeable tray pieces, with the shapes the search tries.
+struct PieceType {
+    key: PieceKey,
+    /// For singles: the key tile (kind, and orientation if not rotatable).
+    single: Option<Tile>,
+    shapes: Vec<Block>,
+    /// Per shape: its road cells as (x, y, tile), to try on the route.
+    roads: Vec<Vec<(i32, i32, Tile)>>,
 }
 
 struct Search<'a> {
     level: &'a Level,
-    types: Vec<Tile>,
+    types: Vec<PieceType>,
     remaining: Vec<u8>,
-    left: u32,
+    /// Road cells the unused pieces could still fill, plus covered road cells
+    /// the route has not entered yet.
+    cap: u32,
     visited: Vec<bool>,
     path: Vec<usize>,
+    /// Singles chosen for route cells.
     chosen: Vec<Option<Tile>>,
+    /// Free cells covered by a single or a block, and the tile they now hold.
+    covered: Vec<bool>,
+    virt: Vec<Option<Tile>>,
+    /// Blocks placed so far: (type, shape, anchor).
+    blocks: Vec<(usize, usize, usize)>,
     finish: usize,
     all_waypoints: u32,
     /// `dist[k][c]`: fewest free cells to fill going from `c` to waypoint `k`
@@ -60,7 +122,7 @@ struct Search<'a> {
     /// Ordered levels: free cells needed from waypoint `k` onward to the finish.
     chain: Vec<u32>,
     limit: usize,
-    seen: HashSet<Vec<(u16, u8)>>,
+    seen: HashSet<(Vec<u16>, Vec<(u16, u8)>)>,
     solutions: Vec<Solution>,
     stats: Stats,
     budget: u64,
@@ -68,13 +130,44 @@ struct Search<'a> {
 
 impl<'a> Search<'a> {
     fn new(level: &'a Level, limit: usize, budget: u64) -> Search<'a> {
-        let mut counts: Vec<(Tile, u8)> = Vec::new();
-        for &t in &level.tray {
-            let key = piece_type(level, t);
-            match counts.iter_mut().find(|(k, _)| *k == key) {
-                Some((_, n)) => *n += 1,
-                None => counts.push((key, 1)),
+        let mut types: Vec<PieceType> = Vec::new();
+        let mut remaining: Vec<u8> = Vec::new();
+        for piece in &level.tray {
+            let key = piece_key(level, piece);
+            if let Some(i) = types.iter().position(|t| t.key == key) {
+                remaining[i] += 1;
+                continue;
             }
+            let shapes = match &key {
+                PieceKey::Single(t) => vec![Block { w: 1, h: 1, tiles: vec![Some(*t)], rot: 0 }],
+                PieceKey::Block(b) if level.rotatable => {
+                    let mut shapes: Vec<Block> = Vec::new();
+                    for r in 0..4 {
+                        let s = b.shape(r);
+                        if !shapes.contains(&s) {
+                            shapes.push(s);
+                        }
+                    }
+                    shapes
+                }
+                PieceKey::Block(b) => vec![b.clone()],
+            };
+            let roads = shapes
+                .iter()
+                .map(|b| {
+                    b.tiles
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(k, t)| t.map(|t| ((k % b.w as usize) as i32, (k / b.w as usize) as i32, t)))
+                        .collect()
+                })
+                .collect();
+            let single = match &key {
+                PieceKey::Single(t) => Some(*t),
+                PieceKey::Block(_) => None,
+            };
+            types.push(PieceType { key, single, shapes, roads });
+            remaining.push(1);
         }
         let waypoints = level.waypoints();
         let finish = level.finish().expect("validated level has a finish");
@@ -88,12 +181,15 @@ impl<'a> Search<'a> {
         }
         Search {
             level,
-            types: counts.iter().map(|(t, _)| *t).collect(),
-            remaining: counts.iter().map(|(_, n)| *n).collect(),
-            left: level.tray.len() as u32,
+            types,
+            remaining,
+            cap: level.tray.iter().map(|p| p.road_cells() as u32).sum(),
             visited: vec![false; level.len()],
             path: Vec::new(),
             chosen: vec![None; level.len()],
+            covered: vec![false; level.len()],
+            virt: vec![None; level.len()],
+            blocks: Vec::new(),
             finish,
             all_waypoints: (1u32 << n) - 1,
             dist,
@@ -135,6 +231,11 @@ impl<'a> Search<'a> {
         }
     }
 
+    /// The road tile on `c` right now: fixed, or from a piece placed in this search.
+    fn tile_at(&self, c: usize) -> Option<Tile> {
+        self.level.cells[c].fixed_tile().or(if self.covered[c] { self.virt[c] } else { None })
+    }
+
     fn dfs(&mut self, cur: usize, entry: Option<Side>, mask: u32, next: usize) {
         self.stats.nodes += 1;
         if self.stats.nodes > self.budget {
@@ -148,31 +249,16 @@ impl<'a> Search<'a> {
             return;
         }
         let mut progressed = false;
-        if let Some(t) = self.level.cells[cur].fixed_tile() {
-            for s in Side::ALL {
-                if t.has(s) && Some(s) != entry {
-                    progressed |= self.step(cur, s, None, mask, next);
-                }
-            }
+        if let Some(t) = self.tile_at(cur) {
+            progressed |= self.exits(cur, t, entry, mask, next);
         } else {
             for ti in 0..self.types.len() {
                 if self.remaining[ti] == 0 {
                     continue;
                 }
-                let kind = self.types[ti].kind;
-                let rots: Vec<u8> = if self.level.rotatable { (0..kind.orientations()).collect() } else { vec![self.types[ti].rot] };
-                let mut tried: Mask = 0;
-                for rot in rots {
-                    let t = Tile::new(kind, rot);
-                    if entry.is_some_and(|e| !t.has(e)) {
-                        continue;
-                    }
-                    for s in Side::ALL {
-                        if t.has(s) && Some(s) != entry && tried & s.bit() == 0 {
-                            tried |= s.bit();
-                            progressed |= self.step(cur, s, Some((ti, t)), mask, next);
-                        }
-                    }
+                match self.types[ti].single {
+                    Some(key) => progressed |= self.try_single(cur, ti, key, entry, mask, next),
+                    None => progressed |= self.try_blocks(cur, ti, entry, mask, next),
                 }
             }
         }
@@ -181,7 +267,95 @@ impl<'a> Search<'a> {
         }
     }
 
-    /// Try moving from `cur` through side `s`, having put `choice` on `cur`.
+    fn exits(&mut self, cur: usize, t: Tile, entry: Option<Side>, mask: u32, next: usize) -> bool {
+        let mut progressed = false;
+        for s in Side::ALL {
+            if t.has(s) && Some(s) != entry {
+                progressed |= self.step(cur, s, None, mask, next);
+            }
+        }
+        progressed
+    }
+
+    fn try_single(&mut self, cur: usize, ti: usize, key: Tile, entry: Option<Side>, mask: u32, next: usize) -> bool {
+        let rots = if self.level.rotatable { 0..key.kind.orientations() } else { key.rot..key.rot + 1 };
+        let mut tried: Mask = 0;
+        let mut progressed = false;
+        for rot in rots {
+            let t = Tile::new(key.kind, rot);
+            if entry.is_some_and(|e| !t.has(e)) {
+                continue;
+            }
+            for s in Side::ALL {
+                if t.has(s) && Some(s) != entry && tried & s.bit() == 0 {
+                    tried |= s.bit();
+                    progressed |= self.step(cur, s, Some((ti, t)), mask, next);
+                }
+            }
+        }
+        progressed
+    }
+
+    /// Place a block of type `ti` so that one of its road cells lands on
+    /// `cur` and accepts the route from `entry`.
+    fn try_blocks(&mut self, cur: usize, ti: usize, entry: Option<Side>, mask: u32, next: usize) -> bool {
+        let (cx, cy) = self.level.xy(cur);
+        let (gw, gh) = (self.level.width as i32, self.level.height as i32);
+        let mut progressed = false;
+        for si in 0..self.types[ti].shapes.len() {
+            let (w, h) = (self.types[ti].shapes[si].w as i32, self.types[ti].shapes[si].h as i32);
+            for ri in 0..self.types[ti].roads[si].len() {
+                let (ox, oy, t) = self.types[ti].roads[si][ri];
+                if entry.is_some_and(|e| !t.has(e)) {
+                    continue;
+                }
+                let (ax, ay) = (cx - ox, cy - oy);
+                if ax < 0 || ay < 0 || ax + w > gw || ay + h > gh {
+                    continue;
+                }
+                let anchor = (ay * gw + ax) as usize;
+                let cell_at = |x: i32, y: i32| ((ay + y) * gw + ax + x) as usize;
+                let fits = (0..h).all(|y| {
+                    (0..w).all(|x| {
+                        let c = cell_at(x, y);
+                        self.level.cells[c].is_empty() && !self.covered[c] && (c == cur || !self.visited[c])
+                    })
+                });
+                if !fits {
+                    continue;
+                }
+                // Place it: one piece used, its other road cells become reachable capacity.
+                self.remaining[ti] -= 1;
+                self.cap -= 1;
+                let shape = &self.types[ti].shapes[si];
+                for y in 0..h {
+                    for x in 0..w {
+                        let c = cell_at(x, y);
+                        self.covered[c] = true;
+                        self.virt[c] = shape.tiles[(y * w + x) as usize];
+                    }
+                }
+                self.blocks.push((ti, si, anchor));
+                progressed |= self.exits(cur, t, entry, mask, next);
+                self.blocks.pop();
+                for y in 0..h {
+                    for x in 0..w {
+                        let c = cell_at(x, y);
+                        self.covered[c] = false;
+                        self.virt[c] = None;
+                    }
+                }
+                self.cap += 1;
+                self.remaining[ti] += 1;
+                if self.stop() {
+                    return progressed;
+                }
+            }
+        }
+        progressed
+    }
+
+    /// Try moving from `cur` through side `s`, having put single `choice` on `cur`.
     fn step(&mut self, cur: usize, s: Side, choice: Option<(usize, Tile)>, mask: u32, next: usize) -> bool {
         if self.stop() {
             return false;
@@ -194,7 +368,10 @@ impl<'a> Search<'a> {
         if !cell.passable() {
             return false;
         }
-        if let Some(t) = cell.fixed_tile() {
+        if self.covered[nb] && self.virt[nb].is_none() {
+            return false; // a block cell without road
+        }
+        if let Some(t) = self.tile_at(nb) {
             if !t.has(s.opposite()) {
                 return false;
             }
@@ -210,41 +387,53 @@ impl<'a> Search<'a> {
         if self.level.meets_dame(cur, nb, self.path.len()) {
             return false;
         }
-        let used = choice.map_or(0, |_| 1);
-        let need_here = u32::from(cell.is_empty());
-        if need_here + self.lower_bound(nb, mask2, next2) > self.left - used {
+        let used = u32::from(choice.is_some());
+        let entering_covered = u32::from(self.covered[nb]);
+        let needs_piece = u32::from(cell.is_empty() && !self.covered[nb]);
+        let cap_after = self.cap - used - entering_covered;
+        if needs_piece + self.lower_bound(nb, mask2, next2) > cap_after {
             return false;
         }
 
         if let Some((ti, t)) = choice {
             self.remaining[ti] -= 1;
             self.chosen[cur] = Some(t);
+            self.covered[cur] = true;
+            self.virt[cur] = Some(t);
         }
-        self.left -= used;
+        let cap_before = self.cap;
+        self.cap = cap_after;
         self.visited[nb] = true;
         self.path.push(nb);
         self.dfs(nb, Some(s.opposite()), mask2, next2);
         self.path.pop();
         self.visited[nb] = false;
-        self.left += used;
+        self.cap = cap_before;
         if let Some((ti, _)) = choice {
             self.remaining[ti] += 1;
             self.chosen[cur] = None;
+            self.covered[cur] = false;
+            self.virt[cur] = None;
         }
         true
     }
 
     fn record(&mut self) {
-        let key: Vec<(u16, u8)> = self
-            .path
-            .iter()
-            .map(|&c| (c as u16, self.chosen[c].map_or(u8::MAX, |t| t.kind as u8)))
-            .collect();
-        if self.seen.insert(key) {
-            self.solutions.push(Solution {
-                route: self.path.iter().map(|&c| c as u16).collect(),
-                pieces: self.path.iter().filter_map(|&c| self.chosen[c].map(|t| (c as u16, t))).collect(),
-            });
+        let sol = Solution {
+            route: self.path.iter().map(|&c| c as u16).collect(),
+            pieces: self.path.iter().filter_map(|&c| self.chosen[c].map(|t| (c as u16, t))).collect(),
+            blocks: self
+                .blocks
+                .iter()
+                .map(|&(ti, si, anchor)| {
+                    let shape = self.types[ti].shapes[si].clone();
+                    let cells = self.level.footprint(anchor, &shape).unwrap().into_iter().map(|(c, t)| (c as u16, t)).collect();
+                    PlacedBlock { anchor: anchor as u16, shape, cells }
+                })
+                .collect(),
+        };
+        if self.seen.insert((sol.route.clone(), sol.signature())) {
+            self.solutions.push(sol);
         }
     }
 }
@@ -299,11 +488,11 @@ pub fn count_solutions(level: &Level, limit: u32) -> u32 {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Hint {
-    /// Put tray piece `piece` on `cell`, turned `rot`.
+    /// Put tray piece `piece` with its top-left on `cell`, turned `rot`.
     Place { cell: u16, piece: u16, rot: u8 },
-    /// Turn the piece on `cell` to `rot`.
+    /// Turn the single piece on `cell` to `rot`.
     Rotate { cell: u16, rot: u8 },
-    /// The piece on `cell` is wrong: take it back to the tray.
+    /// The piece whose top-left is on `cell` is wrong: take it back to the tray.
     Remove { cell: u16 },
 }
 
@@ -324,80 +513,153 @@ fn rot_for(kind: TileKind, need: Mask) -> Option<u8> {
     (0..kind.orientations()).find(|&r| Tile::new(kind, r).mask() & need == need)
 }
 
+/// A piece the plan still has to put down.
+enum Want {
+    Single { cell: u16, tile: Tile, need: Mask },
+    Block { anchor: u16, shape: Block },
+}
+
 /// All steps from `state` to `sol`: removals, then turns, then placements
 /// in route order.
 fn plan(level: &Level, state: &State, sol: &Solution) -> Vec<Hint> {
-    let key = |t: Tile| piece_type(level, t);
-    let mut removes = Vec::new();
+    let placements = state.placements(level);
+    let mut cover: Vec<Option<usize>> = vec![None; level.len()];
+    for (pi, (_, _, cells)) in placements.iter().enumerate() {
+        for &(c, _) in cells {
+            cover[c] = Some(pi);
+        }
+    }
+    let key_of = |pi: usize| piece_key(level, &level.tray[placements[pi].1.piece as usize]);
+    let route_ix: HashMap<u16, usize> = sol.route.iter().enumerate().map(|(k, &c)| (c, k)).collect();
+
+    let mut kept: HashSet<usize> = HashSet::new();
+    let mut removed: Vec<usize> = Vec::new();
+    let remove = |pi: usize, removed: &mut Vec<usize>| {
+        if !removed.contains(&pi) {
+            removed.push(pi);
+        }
+    };
     let mut rotates = Vec::new();
-    let mut to_place: Vec<(u16, Tile, Mask)> = Vec::new();
-    let mut on_route = vec![false; level.len()];
+    let mut wants: Vec<(usize, Want)> = Vec::new();
+
+    // Blocks already exactly where the solution has them.
+    let mut block_done = vec![false; sol.blocks.len()];
+    for (bi, b) in sol.blocks.iter().enumerate() {
+        let want: Vec<(usize, Option<Mask>)> = b.cells.iter().map(|&(c, t)| (c as usize, t.map(Tile::mask))).collect();
+        let found = placements.iter().enumerate().find(|(pi, (_, p, cells))| {
+            !kept.contains(pi)
+                && level.tray[p.piece as usize].is_block()
+                && key_of(*pi) == PieceKey::Block(if level.rotatable { b.shape.canonical() } else { b.shape.clone() })
+                && cells.iter().map(|&(c, t)| (c, t.map(Tile::mask))).collect::<Vec<_>>() == want
+        });
+        if let Some((pi, _)) = found {
+            kept.insert(pi);
+            block_done[bi] = true;
+        }
+    }
+
+    // Singles on the route.
     for (k, &c) in sol.route.iter().enumerate() {
-        on_route[c as usize] = true;
         let Some(&(_, want)) = sol.pieces.iter().find(|(pc, _)| *pc == c) else { continue };
         let need = connections(level, &sol.route, k);
-        match state.placed[c as usize] {
-            Some(p) if key(level.tray[p.piece as usize]) == key(want) => {
-                if Tile::new(want.kind, p.rot).mask() & need != need {
+        match cover[c as usize] {
+            Some(pi) if !kept.contains(&pi) && placements[pi].0 == c as usize && key_of(pi) == piece_key(level, &Piece::Single(want)) => {
+                kept.insert(pi);
+                let rot = placements[pi].1.rot;
+                if Tile::new(want.kind, rot).mask() & need != need {
                     match rot_for(want.kind, need) {
                         Some(rot) if level.rotatable => rotates.push(Hint::Rotate { cell: c, rot }),
-                        _ => removes.push(Hint::Remove { cell: c }),
+                        _ => {
+                            kept.remove(&pi);
+                            remove(pi, &mut removed);
+                            wants.push((k, Want::Single { cell: c, tile: want, need }));
+                        }
                     }
                 }
             }
-            Some(_) => {
-                removes.push(Hint::Remove { cell: c });
-                to_place.push((c, want, need));
+            Some(pi) => {
+                remove(pi, &mut removed);
+                wants.push((k, Want::Single { cell: c, tile: want, need }));
             }
-            None => to_place.push((c, want, need)),
+            None => wants.push((k, Want::Single { cell: c, tile: want, need })),
         }
     }
 
-    // Pieces needed vs. pieces free in the tray (including ones about to be removed).
-    let placed_pieces: HashSet<u16> = state.placed.iter().flatten().map(|p| p.piece).collect();
-    let mut free: HashMap<Tile, Vec<u16>> = HashMap::new();
-    for (i, &t) in level.tray.iter().enumerate() {
-        if !placed_pieces.contains(&(i as u16)) {
-            free.entry(key(t)).or_default().push(i as u16);
+    // Blocks still to place: clear whatever is in their way.
+    for (bi, b) in sol.blocks.iter().enumerate() {
+        if block_done[bi] {
+            continue;
         }
-    }
-    let mut returning: HashMap<Tile, usize> = HashMap::new();
-    for h in &removes {
-        if let Hint::Remove { cell } = h {
-            let p = state.placed[*cell as usize].unwrap();
-            *returning.entry(key(level.tray[p.piece as usize])).or_default() += 1;
-        }
-    }
-    let mut needed: HashMap<Tile, usize> = HashMap::new();
-    for (_, want, _) in &to_place {
-        *needed.entry(key(*want)).or_default() += 1;
-    }
-    for (k, n) in &needed {
-        let have = free.get(k).map_or(0, Vec::len) + returning.get(k).copied().unwrap_or(0);
-        let mut short = n.saturating_sub(have);
-        for (c, p) in state.placed.iter().enumerate() {
-            if short == 0 {
-                break;
-            }
-            if let Some(p) = p {
-                if !on_route[c] && key(level.tray[p.piece as usize]) == *k {
-                    removes.push(Hint::Remove { cell: c as u16 });
-                    short -= 1;
+        for &(c, _) in &b.cells {
+            if let Some(pi) = cover[c as usize] {
+                if !kept.contains(&pi) {
+                    remove(pi, &mut removed);
                 }
             }
         }
+        let order = b.cells.iter().filter_map(|(c, _)| route_ix.get(c)).min().copied().unwrap_or(usize::MAX);
+        wants.push((order, Want::Block { anchor: b.anchor, shape: b.shape.clone() }));
     }
 
+    // Pieces needed vs. pieces free in the tray (including ones about to be removed).
+    let on_board: HashSet<u16> = placements.iter().map(|(_, p, _)| p.piece).collect();
+    let mut free: HashMap<PieceKey, Vec<u16>> = HashMap::new();
+    for (i, piece) in level.tray.iter().enumerate() {
+        if !on_board.contains(&(i as u16)) {
+            free.entry(piece_key(level, piece)).or_default().push(i as u16);
+        }
+    }
+    let want_key = |w: &Want| match w {
+        Want::Single { tile, .. } => piece_key(level, &Piece::Single(*tile)),
+        Want::Block { shape, .. } => PieceKey::Block(if level.rotatable { shape.canonical() } else { shape.clone() }),
+    };
+    let mut needed: HashMap<PieceKey, usize> = HashMap::new();
+    for (_, w) in &wants {
+        *needed.entry(want_key(w)).or_default() += 1;
+    }
+    for (k, n) in &needed {
+        let returning = removed.iter().filter(|&&pi| key_of(pi) == *k).count();
+        let mut short = n.saturating_sub(free.get(k).map_or(0, Vec::len) + returning);
+        for pi in 0..placements.len() {
+            if short == 0 {
+                break;
+            }
+            if !kept.contains(&pi) && !removed.contains(&pi) && key_of(pi) == *k {
+                removed.push(pi);
+                short -= 1;
+            }
+        }
+    }
+
+    wants.sort_by_key(|(order, _)| *order);
     let mut places = Vec::new();
-    for (c, want, need) in to_place {
-        let pool = free.entry(key(want)).or_default();
+    for (_, w) in &wants {
+        let pool = free.entry(want_key(w)).or_default();
         // Pieces still on the board get a placeholder id; only the first
         // step of a plan is ever shown, and removals come before placements.
         let piece = if pool.is_empty() { u16::MAX } else { pool.remove(0) };
-        let rot = if level.rotatable { rot_for(want.kind, need).unwrap_or(want.rot) } else { want.rot };
-        places.push(Hint::Place { cell: c, piece, rot });
+        let tray = level.tray.get(piece as usize);
+        match w {
+            Want::Single { cell, tile, need } => {
+                let rot = if level.rotatable { rot_for(tile.kind, *need).unwrap_or(tile.rot) } else { tile.rot };
+                places.push(Hint::Place { cell: *cell, piece, rot });
+            }
+            Want::Block { anchor, shape } => {
+                let rots: Vec<u8> = match tray {
+                    Some(p) if !level.rotatable => vec![p.rot()],
+                    _ => (0..4).collect(),
+                };
+                let rot = tray.and_then(|p| rots.into_iter().find(|&r| p.shape(r) == *shape)).unwrap_or(0);
+                places.push(Hint::Place { cell: *anchor, piece, rot });
+            }
+        }
     }
-    removes.into_iter().chain(rotates).chain(places).collect()
+    removed
+        .into_iter()
+        .map(|pi| Hint::Remove { cell: placements[pi].0 as u16 })
+        .chain(rotates)
+        .chain(places)
+        .collect()
 }
 
 /// The next step towards the solution closest to the player's board, or
@@ -544,7 +806,7 @@ mod tests {
         assert_eq!(count_solutions(&l, 2), 1);
         l.rotatable = false;
         assert_eq!(count_solutions(&l, 2), 0);
-        l.tray[0] = Tile::new(TileKind::Straight, 1);
+        l.tray[0] = Piece::single(TileKind::Straight, 1);
         assert_eq!(count_solutions(&l, 2), 1);
     }
 
@@ -584,6 +846,76 @@ mod tests {
         st.placed[2] = Some(Placement { piece: 0, rot: 0 });
         st.placed[1] = Some(Placement { piece: 1, rot: 0 });
         assert!(matches!(hint(&l, &st).unwrap(), Some(Hint::Remove { .. })));
+        hints_solve(&l, st);
+    }
+
+    #[test]
+    fn solves_with_a_block() {
+        // A 2×1 straight block spans the gap; no singles in the tray.
+        let l = parse("S╶ . . F╴", "[──]").unwrap();
+        let (sols, _) = solve(&l, 5);
+        assert_eq!(sols.len(), 1);
+        assert_eq!(sols[0].blocks.len(), 1);
+        assert_eq!(sols[0].blocks[0].anchor, 1);
+        // The same block standing up (1×2) also works: it is turned in the search.
+        let l = parse("S╶ . . F╴", "[│/│]").unwrap();
+        assert_eq!(count_solutions(&l, 5), 1);
+        // A block that does not fit anywhere.
+        let l = parse("S╶ . F╴", "[──]").unwrap();
+        assert_eq!(count_solutions(&l, 5), 0);
+    }
+
+    #[test]
+    fn block_with_grass_and_a_turn() {
+        // 2×2 block with grass top-right, placed at 3: route 0 → 3 → 6 → 7 → 8.
+        let l = parse(
+            "S╷ # #
+             . . #
+             . . F╴",
+            "[│./└─]",
+        )
+        .unwrap();
+        let sols = solve(&l, 5).0;
+        assert_eq!(sols.len(), 1, "{sols:?}");
+        assert_eq!(sols[0].route, vec![0, 3, 6, 7, 8]);
+        // The grass cell (4) is covered but carries no road.
+        assert!(sols[0].blocks[0].cells.contains(&(4, None)));
+    }
+
+    #[test]
+    fn blank_block_cell_blocks_the_route() {
+        // The only way is straight through the block's grass cell: no solution.
+        let l = parse("S╶ . . F╴", "[─.]").unwrap();
+        assert_eq!(count_solutions(&l, 5), 0);
+    }
+
+    #[test]
+    fn symmetric_block_counts_once() {
+        let l = parse("S╶ . . F╴", "[──]").unwrap();
+        // Turned 180° it is the same block in the same place.
+        assert_eq!(count_solutions(&l, 5), 1);
+        // The block or two single straights: two solutions.
+        let l = parse("S╶ . . F╴", "[──]──").unwrap();
+        assert_eq!(count_solutions(&l, 5), 2);
+    }
+
+    #[test]
+    fn hints_place_and_fix_blocks() {
+        let l = parse(
+            "S╷ # #
+             . . #
+             . . F╴",
+            "[│./└─]┐",
+        )
+        .unwrap();
+        let h = hint(&l, &State::empty(&l)).unwrap().unwrap();
+        assert!(matches!(h, Hint::Place { cell: 3, piece: 0, .. }), "{h:?}");
+        hints_solve(&l, State::empty(&l));
+        // A block put down turned the wrong way is taken back first.
+        let mut st = State::empty(&l);
+        st.placed[3] = Some(Placement { piece: 0, rot: 2 });
+        st.validate(&l).unwrap();
+        assert_eq!(hint(&l, &st).unwrap(), Some(Hint::Remove { cell: 3 }));
         hints_solve(&l, st);
     }
 

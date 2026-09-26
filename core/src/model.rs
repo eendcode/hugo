@@ -125,6 +125,98 @@ impl Tile {
     }
 }
 
+/// A multi-cell piece: a `w`×`h` rectangle with a fixed road drawn across it.
+/// `tiles` is row-major at rotation 0; `None` is a cell without road (grass),
+/// which the block still covers.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Block {
+    pub w: u8,
+    pub h: u8,
+    pub tiles: Vec<Option<Tile>>,
+    /// Quarter turns clockwise it starts in (tray display / fixed orientation).
+    #[serde(default)]
+    pub rot: u8,
+}
+
+impl Block {
+    /// The block turned `rot` quarter turns clockwise, as a rotation-0 block.
+    /// A clockwise turn maps old (x, y) to new (h - 1 - y, x).
+    pub fn shape(&self, rot: u8) -> Block {
+        let mut b = Block { w: self.w, h: self.h, tiles: self.tiles.clone(), rot: 0 };
+        for _ in 0..rot % 4 {
+            let (w, h) = (b.w as usize, b.h as usize);
+            let mut tiles = vec![None; w * h];
+            for y in 0..h {
+                for x in 0..w {
+                    let (nx, ny) = (h - 1 - y, x);
+                    tiles[ny * h + nx] = b.tiles[y * w + x].map(Tile::rotated);
+                }
+            }
+            b = Block { w: h as u8, h: w as u8, tiles, rot: 0 };
+        }
+        b
+    }
+
+    /// Same content regardless of orientation: the smallest of its four shapes.
+    pub fn canonical(&self) -> Block {
+        (0..4).map(|r| self.shape(r)).min_by_key(|b| (b.w, b.h, b.tiles.iter().map(|t| t.map_or(0, |t| t.mask() + 1)).collect::<Vec<_>>())).unwrap()
+    }
+
+    /// Number of cells that carry road.
+    pub fn road_cells(&self) -> usize {
+        self.tiles.iter().filter(|t| t.is_some()).count()
+    }
+}
+
+/// A tray piece: a single tile or a multi-cell block.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Piece {
+    Block(Block),
+    Single(Tile),
+}
+
+impl Piece {
+    pub fn single(kind: TileKind, rot: u8) -> Piece {
+        Piece::Single(Tile::new(kind, rot))
+    }
+
+    pub fn rot(&self) -> u8 {
+        match self {
+            Piece::Single(t) => t.rot,
+            Piece::Block(b) => b.rot,
+        }
+    }
+
+    /// Cells it can put road on (its capacity for a route).
+    pub fn road_cells(&self) -> usize {
+        match self {
+            Piece::Single(_) => 1,
+            Piece::Block(b) => b.road_cells(),
+        }
+    }
+
+    pub fn is_block(&self) -> bool {
+        matches!(self, Piece::Block(_))
+    }
+
+    /// Rotation-0 shape of this piece turned `rot` quarter turns.
+    pub fn shape(&self, rot: u8) -> Block {
+        match self {
+            Piece::Single(t) => Block { w: 1, h: 1, tiles: vec![Some(Tile::new(t.kind, rot))], rot: 0 },
+            Piece::Block(b) => b.shape(rot),
+        }
+    }
+
+    /// Distinct orientations worth trying.
+    pub fn orientations(&self) -> u8 {
+        match self {
+            Piece::Single(t) => t.kind.orientations(),
+            Piece::Block(_) => 4,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Scenery {
     Dune,
@@ -195,7 +287,7 @@ pub struct Level {
     pub cells: Vec<Cell>,
     /// Pieces the player can place. With `rotatable`, `rot` is only the
     /// orientation the piece starts in.
-    pub tray: Vec<Tile>,
+    pub tray: Vec<Piece>,
     #[serde(default = "default_true")]
     pub rotatable: bool,
     /// Treasures must be visited in `order`.
@@ -316,6 +408,20 @@ impl Level {
         now == to || (t > 0 && before == to && now == from)
     }
 
+    /// The cells (and their tiles) a shape covers when its top-left is at
+    /// `anchor`, or `None` if it sticks out of the grid.
+    pub fn footprint(&self, anchor: usize, shape: &Block) -> Option<Vec<(usize, Option<Tile>)>> {
+        let (ax, ay) = self.xy(anchor);
+        let mut out = Vec::with_capacity(shape.tiles.len());
+        for y in 0..shape.h as i32 {
+            for x in 0..shape.w as i32 {
+                let c = self.index(ax + x, ay + y)?;
+                out.push((c, shape.tiles[(y * shape.w as i32 + x) as usize]));
+            }
+        }
+        Some(out)
+    }
+
     /// Structural sanity checks for levels from untrusted JSON.
     pub fn validate(&self) -> Result<(), ModelError> {
         let err = |m: &str| Err(ModelError(m.to_string()));
@@ -342,8 +448,17 @@ impl Level {
         if orders.len() != self.waypoints().len() || orders.iter().enumerate().any(|(i, &o)| o as usize != i) {
             return err("waypoint orders must be 0..n without gaps");
         }
-        if self.tray.iter().any(|t| t.kind == TileKind::Obstacle) {
-            return err("obstacles cannot be in the tray");
+        for piece in &self.tray {
+            match piece {
+                Piece::Single(t) if t.kind == TileKind::Obstacle => return err("obstacles cannot be in the tray"),
+                Piece::Block(b) if b.w == 0 || b.h == 0 || b.tiles.len() != b.w as usize * b.h as usize => {
+                    return err("block size does not match its tiles")
+                }
+                Piece::Block(b) if b.tiles.iter().flatten().any(|t| t.kind == TileKind::Obstacle) => {
+                    return err("obstacles cannot be in a block")
+                }
+                _ => {}
+            }
         }
         for (k, &c) in self.patrol.iter().enumerate() {
             let next = self.patrol[(k + 1) % self.patrol.len()] as usize;
@@ -356,7 +471,8 @@ impl Level {
     }
 }
 
-/// A player-placed piece: which tray piece, turned how.
+/// A player-placed piece: which tray piece, turned how. Blocks are stored
+/// at their top-left (anchor) cell and cover the rest of their rectangle.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Placement {
     pub piece: u16,
@@ -364,7 +480,7 @@ pub struct Placement {
     pub rot: u8,
 }
 
-/// The player's board: one optional placement per cell.
+/// The player's board: one optional placement per (anchor) cell.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct State {
     pub placed: Vec<Option<Placement>>,
@@ -375,12 +491,28 @@ impl State {
         State { placed: vec![None; level.len()] }
     }
 
-    /// Check that placements only use free cells and each tray piece once.
+    /// Every placement with the cells and tiles it covers.
+    pub fn placements(&self, level: &Level) -> Vec<(usize, Placement, Vec<(usize, Option<Tile>)>)> {
+        self.placed
+            .iter()
+            .enumerate()
+            .filter_map(|(anchor, p)| {
+                let p = (*p)?;
+                let piece = level.tray.get(p.piece as usize)?;
+                let cells = level.footprint(anchor, &piece.shape(p.rot))?;
+                Some((anchor, p, cells))
+            })
+            .collect()
+    }
+
+    /// Check that placements fit on free cells, don't overlap, and use each
+    /// tray piece once.
     pub fn validate(&self, level: &Level) -> Result<(), ModelError> {
         if self.placed.len() != level.len() {
             return Err(ModelError("state size does not match level".into()));
         }
         let mut used = vec![false; level.tray.len()];
+        let mut covered = vec![false; level.len()];
         for (i, p) in self.placed.iter().enumerate() {
             let Some(p) = p else { continue };
             let piece = p.piece as usize;
@@ -388,11 +520,18 @@ impl State {
                 return Err(ModelError(format!("bad or reused tray piece at cell {i}")));
             }
             used[piece] = true;
-            if !level.cells[i].is_empty() {
-                return Err(ModelError(format!("cell {i} is not free")));
-            }
-            if !level.rotatable && Tile::new(level.tray[piece].kind, p.rot) != level.tray[piece].normalized() {
+            let tray = &level.tray[piece];
+            if !level.rotatable && tray.shape(p.rot) != tray.shape(tray.rot()) {
                 return Err(ModelError(format!("piece at cell {i} may not be rotated")));
+            }
+            let Some(cells) = level.footprint(i, &tray.shape(p.rot)) else {
+                return Err(ModelError(format!("piece at cell {i} sticks out of the board")));
+            };
+            for (c, _) in cells {
+                if !level.cells[c].is_empty() || covered[c] {
+                    return Err(ModelError(format!("cell {c} is not free")));
+                }
+                covered[c] = true;
             }
         }
         Ok(())
@@ -400,16 +539,15 @@ impl State {
 
     /// The tile currently in each cell: fixed tiles and placed pieces.
     pub fn board(&self, level: &Level) -> Vec<Option<Tile>> {
-        level
-            .cells
-            .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                c.fixed_tile().or_else(|| {
-                    self.placed.get(i).copied().flatten().map(|p| Tile::new(level.tray[p.piece as usize].kind, p.rot))
-                })
-            })
-            .collect()
+        let mut board: Vec<Option<Tile>> = level.cells.iter().map(Cell::fixed_tile).collect();
+        for (_, _, cells) in self.placements(level) {
+            for (c, t) in cells {
+                if level.cells[c].is_empty() {
+                    board[c] = t;
+                }
+            }
+        }
+        board
     }
 }
 
@@ -463,6 +601,29 @@ mod tests {
             let (ox, oy) = s.opposite().delta();
             assert_eq!((dx + ox, dy + oy), (0, 0));
         }
+    }
+
+    #[test]
+    fn block_rotation() {
+        // 2×1: curve (N,E) on the left, blank on the right.
+        let b = Block { w: 2, h: 1, tiles: vec![Some(Tile::new(TileKind::Curve, 0)), None], rot: 0 };
+        let r1 = b.shape(1);
+        assert_eq!((r1.w, r1.h), (1, 2));
+        // Left cell moves to the top; the curve turns to (E,S).
+        assert_eq!(r1.tiles, vec![Some(Tile::new(TileKind::Curve, 1)), None]);
+        let r2 = b.shape(2);
+        assert_eq!(r2.tiles, vec![None, Some(Tile::new(TileKind::Curve, 2))]);
+        assert_eq!(b.shape(4), b.shape(0));
+        assert_eq!(r1.canonical(), b.canonical());
+    }
+
+    #[test]
+    fn piece_json() {
+        let single: Piece = serde_json::from_str(r#"{"kind":"Curve","rot":1}"#).unwrap();
+        assert_eq!(single, Piece::single(TileKind::Curve, 1));
+        let block: Piece = serde_json::from_str(r#"{"w":2,"h":1,"tiles":[{"kind":"Straight","rot":1},null]}"#).unwrap();
+        assert!(block.is_block());
+        assert_eq!(block.road_cells(), 1);
     }
 
     #[test]

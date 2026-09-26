@@ -5,13 +5,16 @@
 //! 3. Derive tiles, fix some as givens, send the rest to the tray.
 //! 4. Fill the other cells with scenery, mist (maybe with lure roads),
 //!    robber trails or free space; add decoy pieces; maybe a Dame loop.
+//! 4b. Carve some stretches of the route into multi-cell blocks (a
+//!    rectangle with the road fixed on it); harder levels get more of them.
 //! 5. Repair: while the solver finds a second solution, block a cell it uses
-//!    (or fix a piece) until the intended route is the only one.
+//!    (or fix a piece, or drop a spare one) until the intended route is the
+//!    only one.
 
-use crate::model::{Cell, Level, Scenery, Side, Tile, TileKind};
+use crate::model::{Block, Cell, Level, Piece, Scenery, Side, Tile, TileKind};
 use crate::rng::Rng;
 use crate::rules;
-use crate::solver::{self, Solution};
+use crate::solver::{self, piece_key, PieceKey, PlacedBlock, Solution};
 use serde::{Deserialize, Serialize};
 
 /// Difficulty knobs. See [`Params::for_difficulty`] for the stage ramp.
@@ -35,6 +38,12 @@ pub struct Params {
     pub lure_prob: f64,
     /// Length range of the Witte Dame's loop, if any.
     pub patrol: Option<(usize, usize)>,
+    /// Multi-cell blocks carved out of the route.
+    pub blocks: usize,
+    /// Block sizes (w, h) to choose from; either orientation is used.
+    pub block_sizes: Vec<(u8, u8)>,
+    /// Decoy blocks added to the tray.
+    pub decoy_blocks: usize,
     /// Accept only levels whose score lands in this band (when possible).
     pub band: (u32, u32),
 }
@@ -61,6 +70,9 @@ impl Params {
             fill: [1.0, 3.0, 0.0, 0.0],
             lure_prob: 0.0,
             patrol: None,
+            blocks: 0,
+            block_sizes: vec![(2, 1)],
+            decoy_blocks: 0,
             band: (0, u32::MAX),
         };
         match d {
@@ -124,6 +136,25 @@ impl Params {
                 p.junction_prob = 0.15;
             }
         }
+        // Blocks: introduced in stage 2, bigger and more of them later on.
+        const SMALL: [(u8, u8); 2] = [(2, 1), (3, 1)];
+        const ALL: [(u8, u8); 4] = [(2, 1), (3, 1), (2, 2), (3, 2)];
+        (p.blocks, p.block_sizes, p.decoy_blocks) = match d {
+            0 => (0, vec![], 0),
+            1 => (1, vec![(2, 1)], 0),
+            2 => (1, SMALL.to_vec(), 0),
+            3 => (1, ALL[..3].to_vec(), 0),
+            4 => (2, ALL.to_vec(), 0),
+            5 => (1, vec![(2, 1), (2, 2)], 0),
+            6 => (2, ALL.to_vec(), 1),
+            7 => (3, ALL.to_vec(), 1),
+            _ => (3 + (d - 8) as usize, ALL.to_vec(), 1),
+        };
+        if size <= 4 {
+            p.block_sizes.retain(|&(w, h)| w * h <= 4);
+            p.blocks = p.blocks.min(1);
+        }
+
         // Small boards cannot hold many treasures.
         let max_wp = (size as usize).saturating_sub(3);
         p.waypoints = p.waypoints.min(max_wp);
@@ -139,7 +170,7 @@ impl Params {
 /// board from `levelpack calibrate`, scaled linearly with board size.
 fn band(d: u32, size: u8) -> (u32, u32) {
     const AT_5: [(u32, u32); 10] =
-        [(30, 40), (36, 55), (48, 67), (62, 85), (78, 96), (85, 99), (105, 124), (131, 148), (140, 164), (150, 180)];
+        [(30, 40), (46, 65), (56, 76), (73, 93), (88, 115), (91, 114), (126, 161), (159, 203), (169, 217), (190, 244)];
     let (lo, hi) = AT_5[d.min(MAX_DIFFICULTY) as usize];
     let scale = |v: u32| (v as f64 * size as f64 / 5.0).round() as u32;
     (scale(lo), scale(hi))
@@ -157,6 +188,8 @@ impl std::fmt::Display for GenError {
 impl std::error::Error for GenError {}
 
 const MAX_ATTEMPTS: usize = 400;
+/// Good levels outside the score band to try before taking the closest one.
+const BAND_MISSES: usize = 6;
 const REPAIR_ROUNDS: usize = 60;
 /// Solver node budget per check while generating; a level that needs more is
 /// too hard for a five-year-old anyway.
@@ -172,6 +205,7 @@ pub fn generate(seed: u64, difficulty: u32, size: u8) -> Result<Level, GenError>
 pub fn generate_with(seed: u64, difficulty: u32, params: &Params) -> Result<Level, GenError> {
     let mut rng = Rng::new(seed ^ ((difficulty as u64) << 48) ^ ((params.width as u64) << 56));
     let mut fallback: Option<Level> = None;
+    let mut misses = 0;
     for attempt in 0..MAX_ATTEMPTS {
         let sub = rng.next_u64();
         let Some(mut level) = attempt_level(sub, params) else { continue };
@@ -186,7 +220,8 @@ pub fn generate_with(seed: u64, difficulty: u32, params: &Params) -> Result<Leve
         if fallback.as_ref().is_none_or(|f| miss(&level) < miss(f)) {
             fallback = Some(level);
         }
-        if attempt > MAX_ATTEMPTS / 4 && fallback.is_some() {
+        misses += 1;
+        if misses >= BAND_MISSES || attempt > MAX_ATTEMPTS / 4 {
             break;
         }
     }
@@ -341,8 +376,59 @@ fn patrol_candidates(level: &Level, rng: &mut Rng, lo: usize, hi: usize) -> Vec<
     out
 }
 
-fn same_solution(a: &Solution, b: &Solution) -> bool {
-    a.route == b.route && a.pieces.iter().zip(&b.pieces).all(|(x, y)| x.0 == y.0 && x.1.kind == y.1.kind)
+/// Pick rectangles over the route to turn into blocks. A block may cover
+/// route cells that would otherwise be tray pieces and cells off the route
+/// (which stay grass on the block); it needs at least two road cells and
+/// mostly road. Returns (anchor, w, h) per block.
+fn choose_blocks(rng: &mut Rng, level: &Level, on_route: &[bool], p: &Params) -> Vec<(usize, u8, u8)> {
+    let mut taken = vec![false; level.len()];
+    let mut out = Vec::new();
+    for _ in 0..p.blocks {
+        let mut candidates: Vec<(usize, u8, u8, f64)> = Vec::new();
+        for &(bw, bh) in &p.block_sizes {
+            for (w, h) in [(bw, bh), (bh, bw)] {
+                if w == h && (w, h) != (bw, bh) {
+                    continue;
+                }
+                for anchor in 0..level.len() {
+                    let shape = Block { w, h, tiles: vec![None; w as usize * h as usize], rot: 0 };
+                    let Some(cells) = level.footprint(anchor, &shape) else { continue };
+                    let usable = cells.iter().all(|&(c, _)| !taken[c] && (!on_route[c] || level.cells[c].is_empty()));
+                    let road = cells.iter().filter(|&&(c, _)| on_route[c]).count();
+                    let area = cells.len();
+                    if usable && road >= 2 && road + 2 >= area {
+                        candidates.push((anchor, w, h, (area * area) as f64));
+                    }
+                }
+            }
+        }
+        if candidates.is_empty() {
+            break;
+        }
+        let weights: Vec<f64> = candidates.iter().map(|c| c.3).collect();
+        let (anchor, w, h, _) = candidates[rng.weighted(&weights)];
+        let shape = Block { w, h, tiles: vec![None; w as usize * h as usize], rot: 0 };
+        for (c, _) in level.footprint(anchor, &shape).unwrap() {
+            taken[c] = true;
+        }
+        out.push((anchor, w, h));
+    }
+    out
+}
+
+fn random_block(rng: &mut Rng, sizes: &[(u8, u8)]) -> Block {
+    let (w, h) = *rng.pick(sizes);
+    let n = w as usize * h as usize;
+    let mut tiles: Vec<Option<Tile>> = (0..n).map(|_| Some(random_tile(rng, &[3.0, 3.0, 1.0, 0.0, 1.0]))).collect();
+    if n > 2 && rng.chance(0.5) {
+        tiles[rng.below(n)] = None;
+    }
+    Block { w, h, tiles, rot: 0 }
+}
+
+/// What covers each cell in a solution: 0 + kind for singles, 32 + mask for block cells.
+fn coverage(sol: &Solution) -> std::collections::HashMap<u16, u8> {
+    sol.signature().into_iter().collect()
 }
 
 /// One generation attempt; `None` if this sub-seed does not work out.
@@ -411,14 +497,40 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
         } else if givens.contains(&k) {
             Cell::Road { tile }
         } else {
-            level.tray.push(tile);
             Cell::Empty
         };
     }
 
-    // Everything off the route.
+    // Blocks over stretches of the route; the other free route cells are singles.
+    let mut in_block = vec![false; n];
+    let mut intended_blocks: Vec<PlacedBlock> = Vec::new();
+    for (anchor, w, h) in choose_blocks(&mut rng, &level, &on_route, p) {
+        let blank = Block { w, h, tiles: vec![None; w as usize * h as usize], rot: 0 };
+        let cells: Vec<(u16, Option<Tile>)> = level
+            .footprint(anchor, &blank)
+            .unwrap()
+            .into_iter()
+            .map(|(c, _)| (c as u16, route.iter().position(|&r| r == c).map(|k| tiles[k])))
+            .collect();
+        for &(c, _) in &cells {
+            in_block[c as usize] = true;
+        }
+        let shape = Block { w, h, tiles: cells.iter().map(|(_, t)| *t).collect(), rot: 0 };
+        level.tray.push(Piece::Block(shape.clone()));
+        intended_blocks.push(PlacedBlock { anchor: anchor as u16, shape, cells });
+    }
+    if intended_blocks.len() < p.blocks.min(1) {
+        return None;
+    }
+    for (k, &c) in route.iter().enumerate() {
+        if level.cells[c].is_empty() && !in_block[c] {
+            level.tray.push(Piece::Single(tiles[k]));
+        }
+    }
+
+    // Everything off the route (block cells stay free for the block).
     for c in 0..n {
-        if on_route[c] {
+        if on_route[c] || in_block[c] {
             continue;
         }
         level.cells[c] = match rng.weighted(&p.fill) {
@@ -439,6 +551,22 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
         };
     }
 
+    // Decoy pieces.
+    for _ in 0..p.decoys {
+        level.tray.push(Piece::Single(random_tile(&mut rng, &[3.0, 3.0, 1.0, 0.3, 2.0])));
+    }
+    for _ in 0..p.decoy_blocks {
+        level.tray.push(Piece::Block(random_block(&mut rng, &p.block_sizes)));
+    }
+    if !p.rotatable {
+        // Without rotation every piece keeps the orientation it comes in.
+        for piece in &mut level.tray {
+            if let Piece::Single(t) = piece {
+                *t = t.normalized();
+            }
+        }
+    }
+
     // The Witte Dame: a loop the intended route slips past, but that catches
     // at least one tempting other route (so the timing really matters).
     if let Some((lo, hi)) = p.patrol {
@@ -449,7 +577,7 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
             .filter(|(_, c)| matches!(c, Cell::Start { .. } | Cell::Finish { .. } | Cell::Waypoint { .. }))
             .map(|(i, _)| i)
             .collect();
-        let (others, st) = solver::solve_with_budget(&level, 24, GEN_NODE_BUDGET);
+        let (others, st) = solver::solve_with_budget(&level, 12, GEN_NODE_BUDGET);
         if st.exhausted {
             return None;
         }
@@ -468,21 +596,16 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
         level.patrol = ring;
     }
 
-    // Decoy pieces.
-    for _ in 0..p.decoys {
-        level.tray.push(random_tile(&mut rng, &[3.0, 3.0, 1.0, 0.3, 2.0]));
-    }
-    if !p.rotatable {
-        // Without rotation every piece keeps the orientation it comes in.
-        for t in &mut level.tray {
-            *t = t.normalized();
-        }
-    }
-
     // Repair until the intended route is the only solution.
     let intended = |level: &Level| Solution {
         route: route.iter().map(|&c| c as u16).collect(),
-        pieces: route.iter().zip(&tiles).filter(|(c, _)| level.cells[**c].is_empty()).map(|(&c, &t)| (c as u16, t)).collect(),
+        pieces: route
+            .iter()
+            .zip(&tiles)
+            .filter(|(c, _)| level.cells[**c].is_empty() && !in_block[**c])
+            .map(|(&c, &t)| (c as u16, t))
+            .collect(),
+        blocks: intended_blocks.clone(),
     };
     let mut stats = solver::Stats::default();
     let mut solved = false;
@@ -497,8 +620,9 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
             break;
         }
         let intended = intended(&level);
-        let alt = sols.iter().find(|s| !same_solution(s, &intended))?;
-        if let Some(&c) = alt.route.iter().find(|&&c| !on_route[c as usize]) {
+        let alt = sols.iter().find(|s| !s.same_as(&intended))?;
+        if let Some(&c) = alt.route.iter().find(|&&c| !on_route[c as usize] && !in_block[c as usize]) {
+            // The other solution leaves the intended route: block that cell.
             let c = c as usize;
             level.cells[c] = match level.cells[c] {
                 Cell::Empty if p.fill[2] > 0.0 && rng.chance(0.35) => Cell::Mist { tile: None },
@@ -506,17 +630,42 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
                 _ => return None,
             };
         } else {
-            // Same cells, different pieces: make the intended piece a given.
-            let k = alt.pieces.iter().zip(&intended.pieces).position(|(a, b)| a.0 != b.0 || a.1.kind != b.1.kind)?;
-            let (c, tile) = intended.pieces.get(k).copied()?;
-            let key = |t: &Tile| if p.rotatable { t.kind == tile.kind } else { t.normalized() == tile.normalized() };
-            let ix = level.tray.iter().position(key)?;
-            level.tray.remove(ix);
-            level.cells[c as usize] = Cell::Road { tile };
+            // Same area, different pieces: find the first route cell covered differently.
+            let (mine, theirs) = (coverage(&intended), coverage(alt));
+            let c = *alt.route.iter().find(|c| mine.get(c) != theirs.get(c))?;
+            if let Some(&(_, tile)) = intended.pieces.iter().find(|(pc, _)| *pc == c) {
+                // Make the intended single a given.
+                let key = piece_key(&level, &Piece::Single(tile));
+                let ix = level.tray.iter().position(|t| piece_key(&level, t) == key)?;
+                level.tray.remove(ix);
+                level.cells[c as usize] = Cell::Road { tile };
+            } else {
+                // The cell belongs to an intended block, and the other solution
+                // covers it differently. Drop a spare piece of the kind it used
+                // there; failing that, fix an intended single of that kind as a
+                // given so the tray runs short of it.
+                let used: PieceKey = if let Some(&(_, t)) = alt.pieces.iter().find(|(pc, _)| *pc == c) {
+                    piece_key(&level, &Piece::Single(t))
+                } else {
+                    let b = alt.blocks.iter().find(|b| b.cells.iter().any(|(bc, _)| *bc == c))?;
+                    piece_key(&level, &Piece::Block(b.shape.clone()))
+                };
+                let needed = intended.pieces.iter().filter(|(_, t)| piece_key(&level, &Piece::Single(*t)) == used).count()
+                    + intended.blocks.iter().filter(|b| piece_key(&level, &Piece::Block(b.shape.clone())) == used).count();
+                let have: Vec<usize> = (0..level.tray.len()).filter(|&i| piece_key(&level, &level.tray[i]) == used).collect();
+                if have.len() > needed {
+                    level.tray.remove(*have.last().unwrap());
+                } else {
+                    let &(gc, tile) = intended.pieces.iter().find(|(_, t)| piece_key(&level, &Piece::Single(*t)) == used)?;
+                    level.tray.remove(*have.first()?);
+                    level.cells[gc as usize] = Cell::Road { tile };
+                }
+            }
         }
     }
     // Leave the player something to do.
-    if !solved || intended(&level).pieces.len() < 2 {
+    let todo = intended(&level);
+    if !solved || todo.pieces.len() + todo.blocks.len() < 2 {
         return None;
     }
 
@@ -530,8 +679,11 @@ fn attempt_level(seed: u64, p: &Params) -> Option<Level> {
     }
 
     if p.rotatable {
-        for t in &mut level.tray {
-            *t = Tile::new(t.kind, rng.below(4) as u8);
+        for piece in &mut level.tray {
+            match piece {
+                Piece::Single(t) => *t = Tile::new(t.kind, rng.below(4) as u8),
+                Piece::Block(b) => b.rot = rng.below(4) as u8,
+            }
         }
     }
     rng.shuffle(&mut level.tray);
@@ -546,7 +698,8 @@ pub fn score(level: &Level, stats: &solver::Stats, decoys: usize) -> u32 {
     let decoys = decoys as f64 * 6.0;
     let wps = level.waypoints().len() as f64 * 8.0 + if level.ordered { 12.0 } else { 0.0 };
     let dame = if level.patrol.is_empty() { 0.0 } else { 20.0 + level.patrol.len() as f64 * 2.0 };
-    (effort + tray + decoys + wps + dame).round() as u32
+    let blocks = level.tray.iter().filter(|p| p.is_block()).map(|p| 6.0 + 2.0 * p.road_cells() as f64).sum::<f64>();
+    (effort + tray + decoys + wps + dame + blocks).round() as u32
 }
 
 #[cfg(test)]
@@ -586,6 +739,11 @@ mod tests {
         assert!(!l.patrol.is_empty());
         let easy = generate(9, 0, 4).unwrap();
         assert!(easy.waypoints().is_empty() && easy.patrol.is_empty());
+        assert!(easy.tray.iter().all(|p| !p.is_block()));
+        // More (and bigger) blocks in harder levels.
+        let blocks = |d: u32| (0..20).map(|s| generate(s, d, 6).unwrap().tray.iter().filter(|p| p.is_block()).count()).sum::<usize>();
+        assert!(blocks(1) >= 15, "stage 2 introduces a block");
+        assert!(blocks(7) > blocks(3));
     }
 
     #[test]

@@ -79,6 +79,26 @@ export function ground(type) {
   }
 }
 
+/** The base of a multi-cell block: one raised plank spanning w×h cells. */
+export function blockBase(w, h) {
+  const W = w * 100;
+  const H = h * 100;
+  const seams = [];
+  for (let x = 1; x < w; x++) seams.push(`<path d="M${x * 100} 12V${H - 12}"/>`);
+  for (let y = 1; y < h; y++) seams.push(`<path d="M12 ${y * 100}H${W - 12}"/>`);
+  return `<rect class="block-shadow" x="6" y="10" width="${W - 8}" height="${H - 8}" rx="14"/>
+    <rect class="block-base" x="4" y="4" width="${W - 8}" height="${H - 8}" rx="14"/>
+    <g class="block-seams">${seams.join('')}</g>`;
+}
+
+/** A grass tuft for block cells without road. */
+export function grass() {
+  return `<g class="grass">
+    <path d="M30 70 q4 -22 10 -30 M40 72 q0 -26 6 -38 M50 72 q2 -20 12 -28 M60 72 q4 -16 14 -20" stroke="#6fbf73" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="66" cy="44" r="6" fill="${COLORS.heather}"/><circle cx="36" cy="38" r="5" fill="#e0b8f0"/>
+  </g>`;
+}
+
 export function scenery(kind) {
   switch (kind) {
     case 'Dune':

@@ -23,21 +23,27 @@ tray. The route must pick up the treasures (in numbered order when shown), may
 not go through mist, and must not meet the Witte Dame on her loop. There are
 no timers, no lives and no losing. Undo and hints are always available.
 
+**Blocks** are big pieces covering several cells: 2×1, 3×1, 2×2 or 3×2, with
+the road already drawn on them. Some cells are grass with no road. Stage 2
+introduces a single 2×1 block. Later stages have more and bigger ones, and the
+last stages add a decoy block that doesn't belong anywhere.
+
 | Action | Touch / mouse | Keyboard / TV remote |
 |---|---|---|
 | Move focus | — | Arrow keys (board, tray and buttons) |
 | Pick a piece | Tap it in the tray | Focus it + OK/Enter |
 | Turn a tray piece | Tap the selected piece again | OK/Enter again |
 | Place | Tap an empty cell | Focus the cell + OK/Enter |
-| Turn a placed piece | Tap it | OK/Enter on it |
+| Place a block | Tap a cell it should cover (it snaps to where it fits; mouse and D-pad show a preview) | Same |
+| Turn a placed piece | Tap it (a block turns around the tapped cell and shifts if needed) | OK/Enter on it |
 | Return a piece to the tray | Long-press it, or the **Terug** button | `Backspace`/`Delete`, or the **Terug** button |
 | Undo | **Oeps** button | **Oeps** button, `u`, or the remote's Back button |
 | Hint | 💡 **Hint** button | 💡 **Hint** button |
 | Watch the Dame's loop | 👻 **Kijk** button | 👻 **Kijk** button |
 
 The **Terug** button returns the most recently placed or turned piece, which
-is marked with a dashed outline. With a tray piece selected, tapping a placed
-piece swaps them.
+is marked with a dashed outline. With a single tray piece selected, tapping a
+placed single piece swaps them.
 
 On the remote, **Back** undoes the last move. With nothing left to undo, it
 goes back to the map, and on other screens it closes menus or goes back one
@@ -149,20 +155,31 @@ deploy/nginx.conf     Pi web server config
   tick 0 and moves one route cell per tick without waiting. They may never
   share a cell at the same tick or swap cells between ticks. The solver
   carries the tick (route index) in its search state.
+- **Blocks** are tray pieces `{w, h, tiles, rot}`. A `null` tile is grass:
+  the block covers that cell, but it has no road. A placement is stored at
+  its top-left (anchor) cell. `Block::shape` (Rust) and `shape()` in
+  `web/game.js` must rotate the same way: old (x, y) goes to new (h−1−y, x).
 - The **solver** extends a route from Start. It chooses tray pieces and
-  orientations for free cells, never reuses pieces beyond their count, never
-  enters mist, and prunes with a lower bound on the free cells still needed to
-  reach the next treasure or the chapel. Solutions are distinct by route and
-  piece *kind*. Orientations that connect the same way, and unused tray
-  pieces, don't count as different solutions.
+  orientations for free cells, never reuses pieces beyond their count, and
+  never enters mist. When the route first steps onto a free cell, the solver
+  can also place a block so that one of its road cells lands there. The
+  block's other cells then act as fixed road. The solver prunes with a lower
+  bound on the free cells still needed to reach the next treasure or the
+  chapel, compared against the road cells the remaining pieces can still
+  cover. Solutions are distinct by route plus what covers it: single pieces
+  by *kind*, block cells by their exact tiles. Orientations that connect the
+  same way, and unused tray pieces, don't count as different solutions.
 - The **generator** walks a random, turn-biased route. It places treasures
   along it, fixes a fraction of the tiles as givens and sends the rest to the
   tray. It fills the other cells with scenery, mist (sometimes with lure
   roads), robber trails or free space, adds decoy pieces, and in patrol stages
-  picks a Dame loop that catches a tempting alternative route. It then
-  *repairs* the level: while the solver finds a second solution, it blocks a
-  cell that solution uses, or makes the differing piece a given, until the
-  level has exactly one solution. The difficulty score combines solver effort,
+  picks a Dame loop that catches a tempting alternative route. Before that it
+  carves rectangles over stretches of the route into blocks; bigger ones are
+  preferred, and the count grows with difficulty. It then *repairs* the
+  level: while the solver finds a second solution, it blocks a cell that
+  solution uses. If the other solution uses the same cells, it fixes the
+  differing single piece as a given, or drops a spare piece that could stand
+  in for part of a block, until the level has exactly one solution. The difficulty score combines solver effort,
   tray size, decoys, treasures and the patrol. `levelpack` generates three
   candidates per slot and spreads the kept 30 across the score range, so each
   stage ramps up gently.
@@ -176,6 +193,7 @@ The repo has no browser test runner. These checks were run in headless
 Chromium via Playwright, outside the repo. Re-check them on the real TV.
 
 - [x] Touch/mouse play: select from the tray, place, turn, return (long-press / Terug), swap
+- [x] Blocks: preview, snap-to-fit placing, turning (with a "Past hier niet" message when there is no room), returning, hints that place blocks
 - [x] Keyboard-only play: arrows reach the board, tray and every button; OK/Enter activates
 - [x] Win animation: Pim rides the route, treasures are collected, the Dame moves in step; stars; Verder / Nog een keer
 - [x] Undo (button, `u`, Back) and hint

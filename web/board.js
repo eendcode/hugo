@@ -1,8 +1,8 @@
 // The play screen: SVG board, tray, buttons, feedback and celebration.
 
-import { road, ground, scenery, mist, pim, chapel, treasure, dame, icon } from './art.js';
+import { road, ground, scenery, mist, pim, chapel, treasure, dame, icon, blockBase, grass } from './art.js';
 import { t, treasureName } from './i18n.js';
-import { Game } from './game.js';
+import { Game, isBlock, shape } from './game.js';
 import * as audio from './audio.js';
 
 const STEP_MS = 380;
@@ -33,7 +33,15 @@ export class PlayScreen {
       remove: (el) => this.onRemove(el),
       back: () => this.onBack(),
       undo: () => this.doUndo(),
+      onFocus: (el) => this.onFocus(el),
     });
+    // Mouse users see where a selected block will land.
+    this.svg.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const cell = e.target.closest?.('.cell');
+      this.showPreview(cell ? Number(cell.dataset.nav.slice(1)) : null);
+    });
+    this.svg.addEventListener('pointerleave', () => this.showPreview(null));
     this.showGoal();
     this.resetIdle();
     this.input.onActivity(() => this.resetIdle());
@@ -59,13 +67,16 @@ export class PlayScreen {
           <svg class="board" viewBox="-6 -6 ${w * 100 + 12} ${h * 100 + 12}" role="grid" aria-label="${t('title')}">
             <rect x="-6" y="-6" width="${w * 100 + 12}" height="${h * 100 + 12}" rx="18" fill="#0a1128"/>
             <g class="cells"></g>
+            <g class="blocks"></g>
+            <g class="lights"></g>
+            <g class="preview"></g>
             <g class="patrol-layer"></g>
             <g class="fx"></g>
             <g class="actors">
               <g class="actor pim-actor"><g class="actor-inner">${pim()}</g></g>
               ${patrol ? `<g class="actor dame-actor"><g class="actor-inner">${dame({ scare: this.opts.scare })}</g></g>` : ''}
             </g>
-            <g class="rings"></g>
+            <rect class="ring" x="-2" y="-2" width="104" height="104" rx="14" visibility="hidden"/>
           </svg>
           ${patrol ? '' : `<div class="float-dame" aria-hidden="true"><svg viewBox="0 0 100 100">${dame({ scare: this.opts.scare })}</svg></div>`}
         </div>
@@ -84,7 +95,10 @@ export class PlayScreen {
     this.svg = this.root.querySelector('.board');
     this.cellsG = this.svg.querySelector('.cells');
     this.fx = this.svg.querySelector('.fx');
-    this.ringsG = this.svg.querySelector('.rings');
+    this.blocksG = this.svg.querySelector('.blocks');
+    this.lightsG = this.svg.querySelector('.lights');
+    this.previewG = this.svg.querySelector('.preview');
+    this.ring = this.svg.querySelector('.ring');
     this.trayEl = this.root.querySelector('.tray');
     this.goalEl = this.root.querySelector('.goal');
     this.pimEl = this.svg.querySelector('.pim-actor');
@@ -143,29 +157,29 @@ export class PlayScreen {
     this.input.refresh();
   }
 
-  cellContent(i) {
+  cellContent(i, cover) {
     const c = this.level.cells[i];
     const reached = this.game.result?.reached?.includes(i);
-    const lit = reached ? '<rect class="lit" x="3" y="3" width="94" height="94" rx="10"/>' : '';
     const tile = c.tile;
     switch (c.kind) {
       case 'Empty': {
-        const p = this.game.placed[i];
+        const p = cover[i];
         if (!p) return ground('empty');
-        const kind = this.level.tray[p.piece].kind;
-        return ground('placed') + lit + road(kind, p.rot) + (this.game.lastCell === i ? '<rect class="last-mark" x="8" y="8" width="84" height="84" rx="8"/>' : '');
+        // Blocks are drawn whole in their own layer.
+        if (isBlock(this.level.tray[p.piece])) return ground('placed');
+        return ground('placed') + road(p.tile.kind, p.tile.rot);
       }
       case 'Road':
-        return ground('fixed') + lit + road(tile.kind, tile.rot);
+        return ground('fixed') + road(tile.kind, tile.rot);
       case 'Trail':
-        return ground('fixed') + lit + road(tile.kind, tile.rot, { trail: true });
+        return ground('fixed') + road(tile.kind, tile.rot, { trail: true });
       case 'Start':
-        return ground('fixed') + lit + road(tile.kind, tile.rot);
+        return ground('fixed') + road(tile.kind, tile.rot);
       case 'Finish':
-        return ground('fixed') + lit + road(tile.kind, tile.rot) + `<g transform="translate(10 6) scale(.8)">${chapel({ lit: !!reached })}</g>`;
+        return ground('fixed') + road(tile.kind, tile.rot) + `<g transform="translate(10 6) scale(.8)">${chapel({ lit: !!reached })}</g>`;
       case 'Waypoint':
         return (
-          ground('fixed') + lit + road(tile.kind, tile.rot) +
+          ground('fixed') + road(tile.kind, tile.rot) +
           `<g class="treasure-slot" data-order="${c.order}"><circle cx="50" cy="50" r="30" fill="url(#g-lantern)" opacity=".7"/><g transform="translate(24 22) scale(.52)">${treasure(c.order)}</g>` +
           (this.level.ordered ? `<g class="order-badge"><circle cx="82" cy="18" r="13"/><text x="82" y="24" text-anchor="middle">${c.order + 1}</text></g>` : '') +
           '</g>'
@@ -181,29 +195,114 @@ export class PlayScreen {
 
   renderCells() {
     const { width: w } = this.level;
+    const cover = this.game.cover();
     this.cellsG.innerHTML = this.level.cells
       .map((c, i) => {
         const [x, y] = [(i % w) * 100, Math.floor(i / w) * 100];
         const kind = c.kind.toLowerCase();
-        const placed = this.game.placed[i] ? ' placed' : '';
+        const placed = cover[i] ? ' placed' : '';
         return `<g class="cell cell-${kind}${placed}" data-nav="c${i}" data-longpress role="gridcell" transform="translate(${x} ${y})">
-          <g class="cell-inner">${this.cellContent(i)}</g>
-          <rect class="ring" x="-2" y="-2" width="104" height="104" rx="14"/>
+          <g class="cell-inner">${this.cellContent(i, cover)}</g>
         </g>`;
       })
       .join('');
+
+    // Blocks: one piece spanning several cells, road fixed on it.
+    this.blocksG.innerHTML = this.game.placed
+      .map((p, anchor) => {
+        if (!p || !isBlock(this.level.tray[p.piece])) return '';
+        const [x, y] = this.xy(anchor);
+        return `<g class="block" data-anchor="${anchor}" transform="translate(${x} ${y})">${this.blockArt(shape(this.level.tray[p.piece], p.rot))}</g>`;
+      })
+      .join('');
+
+    // Lantern light on road connected to Pim, and the last-moved piece.
+    const reached = new Set(this.game.result?.reached || []);
+    const last = this.game.lastCell;
+    const lastCells = last !== null && this.game.placed[last] ? this.game.footprint(last, this.game.placed[last].piece, this.game.placed[last].rot) : [];
+    this.lightsG.innerHTML =
+      [...reached]
+        .map((i) => {
+          const [x, y] = this.xy(i);
+          return `<rect class="lit" data-cell="${i}" x="${x + 3}" y="${y + 3}" width="94" height="94" rx="10"/>`;
+        })
+        .join('') + this.outline(lastCells.map((c) => c.cell), 'last-mark');
+  }
+
+  /** A block drawn in its own box (w×h cells of 100 units). */
+  blockArt(s) {
+    return (
+      blockBase(s.w, s.h) +
+      s.tiles
+        .map((t, k) => {
+          const x = (k % s.w) * 100;
+          const y = Math.floor(k / s.w) * 100;
+          return `<g transform="translate(${x} ${y})">${t ? road(t.kind, t.rot) : grass()}</g>`;
+        })
+        .join('')
+    );
+  }
+
+  /** A rounded outline around a rectangle of cells. */
+  outline(cells, cls) {
+    if (!cells.length) return '';
+    const pts = cells.map((c) => this.xy(c));
+    const x0 = Math.min(...pts.map((p) => p[0]));
+    const y0 = Math.min(...pts.map((p) => p[1]));
+    const x1 = Math.max(...pts.map((p) => p[0])) + 100;
+    const y1 = Math.max(...pts.map((p) => p[1])) + 100;
+    return `<rect class="${cls}" x="${x0 + 8}" y="${y0 + 8}" width="${x1 - x0 - 16}" height="${y1 - y0 - 16}" rx="10"/>`;
+  }
+
+  onFocus(el) {
+    const id = el?.dataset.nav || '';
+    if (id.startsWith('c') && document.body.classList.contains('kbd')) {
+      const [x, y] = this.xy(Number(id.slice(1)));
+      this.ring.setAttribute('x', x - 2);
+      this.ring.setAttribute('y', y - 2);
+      this.ring.setAttribute('visibility', 'visible');
+      this.showPreview(Number(id.slice(1)));
+    } else {
+      this.ring.setAttribute('visibility', 'hidden');
+      this.showPreview(null);
+    }
+  }
+
+  /** Ghost of the selected block where it would land if dropped on `cell`. */
+  showPreview(cell) {
+    const sel = this.game.selected;
+    if (cell === null || sel === null || !isBlock(this.level.tray[sel]) || !this.game.isFree(cell)) {
+      this.previewG.innerHTML = '';
+      return;
+    }
+    const rot = this.game.trayRot[sel];
+    const anchor = this.game.anchorFor(cell, sel, rot);
+    if (anchor === null) {
+      this.previewG.innerHTML = '';
+      return;
+    }
+    const [x, y] = this.xy(anchor);
+    this.previewG.innerHTML = `<g class="ghost" transform="translate(${x} ${y})">${this.blockArt(shape(this.level.tray[sel], rot))}</g>`;
   }
 
   renderTray() {
     const left = this.game.trayLeft();
+    // Blocks first: they are the big decisions.
+    left.sort((a, b) => isBlock(this.level.tray[b]) - isBlock(this.level.tray[a]));
     this.trayEl.innerHTML = left
       .map((i) => {
-        const kind = this.level.tray[i].kind;
+        const piece = this.level.tray[i];
         const sel = this.game.selected === i ? ' selected' : '';
+        if (isBlock(piece)) {
+          const s = shape(piece, this.game.trayRot[i]);
+          return `<button class="piece block${sel}" data-nav="t${i}" role="listitem" aria-pressed="${!!sel}" style="--w: ${s.w}; --h: ${s.h}">
+            <svg viewBox="0 0 ${s.w * 100} ${s.h * 100}">${this.blockArt(s)}</svg></button>`;
+        }
         return `<button class="piece${sel}" data-nav="t${i}" role="listitem" aria-pressed="${!!sel}">
-          <svg viewBox="0 0 100 100">${ground('placed')}${road(kind, this.game.trayRot[i])}</svg></button>`;
+          <svg viewBox="0 0 100 100">${ground('placed')}${road(piece.kind, this.game.trayRot[i])}</svg></button>`;
       })
       .join('');
+    this.showPreview(null);
     this.root.querySelector('.play').classList.toggle('has-selection', this.game.selected !== null);
   }
 
@@ -276,18 +375,26 @@ export class PlayScreen {
     }
     const sel = this.game.selected;
     if (sel !== null) {
-      this.game.place(i, sel);
-      audio.play('place');
-      this.afterMove();
+      if (this.game.dropSelected(i)) {
+        audio.play('place');
+        this.afterMove();
+      } else {
+        this.wiggle(i);
+        this.say(t('noFit'), 'warn');
+      }
       return;
     }
-    if (this.game.placed[i]) {
-      if (this.level.rotatable) {
-        this.game.rotate(i);
-        audio.play('rotate');
-      } else {
+    if (this.game.cover()[i]) {
+      if (!this.level.rotatable) {
         this.game.remove(i);
         audio.play('remove');
+      } else if (this.game.rotate(i)) {
+        audio.play('rotate');
+      } else {
+        // A block with no room to turn here.
+        this.wiggle(i);
+        this.say(t('noFit'), 'warn');
+        return;
       }
       this.afterMove();
       return;
@@ -334,7 +441,9 @@ export class PlayScreen {
     if (!h) return;
     audio.play('hint');
     this.afterMove();
-    this.pulse(h.cell, 'hint-pulse');
+    const p = this.game.placed[h.cell];
+    const cells = p && h.type !== 'Remove' ? this.game.footprint(h.cell, p.piece, p.rot).map((c) => c.cell) : [h.cell];
+    cells.forEach((c) => this.pulse(c, 'hint-pulse'));
     this.input.focus(`c${h.cell}`);
   }
 
@@ -420,7 +529,7 @@ export class PlayScreen {
       const flip = prev !== undefined ? cell % this.level.width < prev % this.level.width : null;
       this.moveActor(this.pimEl, cell, k > 0, flip);
       if (patrol.length) this.moveActor(this.dameEl, patrol[k % patrol.length], k > 0);
-      if (celebrate) this.cellG(cell)?.classList.add('route-lit');
+      if (celebrate) this.lightsG.querySelector(`[data-cell="${cell}"]`)?.classList.add('route-lit');
       if (k > 0) audio.play('step');
       const c = this.level.cells[cell];
       if (celebrate && c.kind === 'Waypoint') {

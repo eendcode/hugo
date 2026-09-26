@@ -321,6 +321,6 @@ mod tests {
         let mut st = State::empty(&l);
         st.placed[1] = Some(Placement { piece: 0, rot: 0 });
         assert!(check(&fixed, &st).is_err());
-        assert_eq!(fixed.tray[0], Tile::new(TileKind::Straight, 1));
+        assert_eq!(fixed.tray[0], crate::model::Piece::single(TileKind::Straight, 1));
     }
 }
