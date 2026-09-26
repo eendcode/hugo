@@ -4,7 +4,7 @@ export PATH := $(HOME)/.cargo/bin:$(PATH)
 
 PORT ?= 8080
 
-.PHONY: all wasm test levels validate calibrate perf serve clean
+.PHONY: all wasm test levels validate calibrate perf serve deploy clean
 
 all: wasm
 
@@ -35,6 +35,13 @@ perf:
 ## Serve web/ on http://localhost:$(PORT)/ for local play.
 serve: wasm
 	python3 -m http.server -d web $(PORT)
+
+## Copy the game to the Raspberry Pi: make deploy PI=pi@192.168.1.50
+PI ?=
+PI_DIR ?= /srv/duinkapel
+deploy: wasm
+	@test -n "$(PI)" || (echo "usage: make deploy PI=user@host" && exit 1)
+	rsync -av --delete --exclude .gitignore --exclude package.json --exclude '*.d.ts' web/ $(PI):$(PI_DIR)/
 
 clean:
 	cargo clean
