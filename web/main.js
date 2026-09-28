@@ -9,10 +9,11 @@ import * as audio from './audio.js';
 import { Input } from './input.js';
 import { app, applySettings, lanternSpinner, leavePlay, showStory, openMenu } from './shell.js';
 import duinkapel from './modes/duinkapel.js';
-import dorp from './modes/dorp.js';
+import dorp from './modes/dorp/index.js';
+import spookhuis from './modes/spookhuis/index.js';
 
 /** The game modes, in menu order. */
-const MODES = [duinkapel, dorp];
+const MODES = [duinkapel, dorp, spookhuis];
 
 // ---------- boot ----------
 

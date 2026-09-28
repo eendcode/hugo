@@ -2,11 +2,11 @@
 // moving villagers, feedback per puzzle kind, and the engine's replies.
 // Rules, hints and the engine come from the Rust core (chess_* functions).
 
-import { icon } from '../art.js';
-import { t } from '../i18n.js';
-import * as audio from '../audio.js';
-import { app, sleep, winOverlay } from '../shell.js';
-import { piece, tree } from './dorp-art.js';
+import { icon } from '../../art.js';
+import { t } from '../../i18n.js';
+import * as audio from '../../audio.js';
+import { app, sleep, winOverlay } from '../../shell.js';
+import { piece, tree } from './art.js';
 
 const MOVE_MS = 330;
 const GAMES = new Set(['PawnRace', 'Endgame', 'Battle']);

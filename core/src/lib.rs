@@ -6,6 +6,7 @@
 pub mod ascii;
 pub mod chess;
 pub mod generator;
+pub mod mansion;
 pub mod model;
 pub mod rng;
 pub mod rules;
@@ -125,5 +126,35 @@ mod wasm {
     pub fn chess_generate(kind: &str, seed: u32, difficulty: u32) -> Result<String, JsError> {
         let kind: PuzzleKind = serde_json::from_str(&format!("{kind:?}"))?;
         json(&puzzles::generate(kind, seed as u64, difficulty).map_err(|e| JsError::new(&e))?)
+    }
+
+    // ---------- Hugo's haunted house ----------
+
+    use crate::mansion;
+
+    /// Candles `{size, lit, par}` blown out by `presses` touches.
+    #[wasm_bindgen]
+    pub fn candles_generate(size: u8, presses: u32, seed: u32) -> Result<String, JsError> {
+        json(&mansion::candles(size, presses as usize, seed as u64))
+    }
+
+    /// The touches `[cell]` of a shortest way to light every candle, or `null`.
+    #[wasm_bindgen]
+    pub fn candles_solve(size: u8, lit: &str) -> Result<String, JsError> {
+        let lit: Vec<bool> = serde_json::from_str(lit)?;
+        json(&mansion::solve_candles(size as usize, &lit))
+    }
+
+    /// A scrambled portrait `{width, height, tiles, par}`.
+    #[wasm_bindgen]
+    pub fn slide_generate(width: u8, height: u8, min: u32, max: u32, seed: u32) -> Result<String, JsError> {
+        json(&mansion::slide(width, height, min, max, seed as u64))
+    }
+
+    /// The square of the tile to slide next on a shortest solution, or `null`.
+    #[wasm_bindgen]
+    pub fn slide_hint(width: u8, height: u8, tiles: &str) -> Result<String, JsError> {
+        let tiles: Vec<u8> = serde_json::from_str(tiles)?;
+        json(&mansion::solve_slide(width as usize, height as usize, &tiles).and_then(|(_, m)| m))
     }
 }

@@ -3,7 +3,7 @@
 // horns, and their knight is a goat. Pieces keep the classic silhouettes
 // so a child who knows chess recognises them at once. 100×100 box.
 
-import { hugo, pim } from '../art.js';
+import { hugo, pim } from '../../art.js';
 
 const LOOK = {
   w: { fill: '#f7efdc', stroke: '#5a3c22', detail: '#c9a466' },

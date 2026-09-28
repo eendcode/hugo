@@ -135,6 +135,18 @@ const SOUNDS = {
   owl: () => owl(),
 };
 
+/** Bell tower notes, lowest to highest (C, E, G, high C). */
+const NOTES = [523, 659, 784, 1047];
+
+export function note(i) {
+  if (!ctx || muted) return;
+  try {
+    bell(NOTES[i % NOTES.length], 0, 0.28, 1.2);
+  } catch {
+    /* sound is optional */
+  }
+}
+
 export function play(name) {
   if (!ctx || muted || !SOUNDS[name]) return;
   try {

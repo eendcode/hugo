@@ -1,11 +1,11 @@
 // Verdedig het dorp: chess puzzles and games against Hugo's bokkenrijders.
 // Stages come from web/levels/dorp (see `levelpack dorp`).
 
-import { t } from '../i18n.js';
-import * as store from '../storage.js';
-import { app, fetchJson, leavePlay, showStory, storyOnce, openMenu, stageMap, cleared, firstOpenLevel, showSpinner } from '../shell.js';
-import { ChessScreen } from './dorp-play.js';
-import { scene, goal, card } from './dorp-art.js';
+import { t } from '../../i18n.js';
+import * as store from '../../storage.js';
+import { app, fetchJson, leavePlay, showStory, storyOnce, openMenu, stageMap, cleared, firstOpenLevel, showSpinner } from '../../shell.js';
+import { ChessScreen } from './play.js';
+import { scene, goal, card } from './art.js';
 
 const ID = 'dorp';
 const INTRO = ['raid', 'square', 'help'];
