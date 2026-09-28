@@ -4,7 +4,7 @@ export PATH := $(HOME)/.cargo/bin:$(PATH)
 
 PORT ?= 8080
 
-.PHONY: all wasm test levels validate calibrate perf serve deploy clean
+.PHONY: all wasm test levels levels-roads levels-dorp validate calibrate perf serve deploy clean
 
 all: wasm
 
@@ -16,11 +16,18 @@ wasm:
 test:
 	cargo test --workspace --release
 
-## Regenerate the committed level packs in web/levels.
-levels:
+## Regenerate all committed level packs in web/levels.
+levels: levels-roads levels-dorp
+
+## The road game's packs (web/levels/stage-N.json).
+levels-roads:
 	cargo run --release -p levelpack -- generate web/levels
 
-## Re-solve every committed level and check it has exactly one solution.
+## The chess packs (web/levels/dorp).
+levels-dorp:
+	cargo run --release -p levelpack -- dorp generate web/levels/dorp
+
+## Re-check every committed level and puzzle (unique solutions, all packs).
 validate:
 	cargo run --release -p levelpack -- validate web/levels
 

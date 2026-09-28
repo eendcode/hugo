@@ -254,10 +254,10 @@ export function dame({ scare = 'spannend', mood = 'sad' } = {}) {
   </g>`;
 }
 
-/** Hoofdman Graaiert on his goat: a silly-scary silhouette (story only). 200×160 box. */
-export function graaiert() {
+/** Hoofdman Hugo, leader of the bokkenrijders, on his goat: a silly-scary silhouette (story only). 200×160 box. */
+export function hugo() {
   const c = '#150d26';
-  return `<g class="graaiert" fill="${c}">
+  return `<g class="hugo" fill="${c}">
     <path d="M40 104 Q52 78 96 80 Q140 78 150 96 Q156 110 144 118 L150 150 L140 150 L132 124 Q110 130 86 126 L70 152 L60 150 L66 122 Q46 120 40 104Z"/>
     <path d="M44 106 L18 132 L26 138 L52 116Z"/>
     <path d="M142 96 Q160 74 176 78 Q188 84 180 96 Q170 104 156 106Z"/>
@@ -313,8 +313,8 @@ export function scene(name, { scare = 'spannend', treasures = [] } = {}) {
       return `${nightBackdrop({ storm: true })}
         <path class="lightning" d="M420 0 L380 160 L430 160 L360 360 L470 150 L420 150 L470 0Z" fill="#fff6b0"/>
         ${at(1050, 420, 3.2, chapel({ lit: false }))}
-        ${at(260, 250, 2.6, graaiert())}
-        ${at(40, 120, 1.2, graaiert())}
+        ${at(260, 250, 2.6, hugo())}
+        ${at(40, 120, 1.2, hugo())}
         ${dunes(820, 'var(--dune-near)', 40)}`;
     case 'scatter':
       return `${nightBackdrop()}
@@ -363,7 +363,7 @@ export function scene(name, { scare = 'spannend', treasures = [] } = {}) {
       return `<rect width="1600" height="900" fill="url(#g-dawn)"/>
         <circle cx="1300" cy="300" r="200" fill="url(#g-sun)"/>
         ${dunes(640, '#e4c98f', 70)}${dunes(760, '#d7b877', 60)}
-        ${at(1180, 440, 0.9, graaiert())}
+        ${at(1180, 440, 0.9, hugo())}
         ${[0, 1, 2].map((i) => `<circle cx="${1370 + i * 46}" cy="${590 - i * 10}" r="${26 - i * 6}" fill="#f4e3b8" opacity=".85"/>`).join('')}
         ${at(260, 360, 4.4, pim())}
         ${dunes(860, '#c9a866', 30)}`;
@@ -394,6 +394,7 @@ export const ICONS = {
   prev: '<path d="M15 5l-7 7 7 7"/>',
   again: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>',
   star: '<path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.3l1-6.2L3 9.7l6.2-.9z"/>',
+  hoof: '<path d="M7 20c-2-3-1-8 2-10 1 3 1 7-2 10zM13 18c-2-3-1-8 2-10 1 3 1 7-2 10z"/><path d="M10 7c-1-2 0-4 2-4M16 5c0-2 1-3 3-3"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
 };
 

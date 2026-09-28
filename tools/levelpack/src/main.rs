@@ -2,9 +2,13 @@
 //! and calibrates/benchmarks the generator.
 //!
 //!     levelpack generate [DIR]   write index.json + stage-N.json
-//!     levelpack validate [DIR]   re-solve every level; fail if not unique
+//!     levelpack validate [DIR]   re-solve every level; fail if not unique (all packs)
 //!     levelpack calibrate        score distribution per difficulty and size
 //!     levelpack perf             time 100 levels per difficulty; fail over budget
+//!     levelpack dorp generate|validate [DIR]   the chess packs (web/levels/dorp)
+//!     levelpack dorp show N [DIR]              print stage N's boards
+
+mod chess;
 
 use duinkapel_core::generator::{self, Params, MAX_DIFFICULTY};
 use duinkapel_core::model::Level;
@@ -202,13 +206,34 @@ fn main() -> ExitCode {
     let dir = PathBuf::from(args.get(1).map_or("web/levels", String::as_str));
     let result = match args.first().map(String::as_str) {
         Some("generate") => generate(&dir),
-        Some("validate") => validate(&dir),
+        // Validates the road packs and every mode pack found under DIR.
+        Some("validate") => validate(&dir).and_then(|()| {
+            let dorp = dir.join("dorp");
+            if dorp.join("index.json").exists() {
+                chess::validate(&dorp)
+            } else {
+                Ok(())
+            }
+        }),
         Some("calibrate") => {
             calibrate();
             Ok(())
         }
         Some("perf") => perf(),
-        _ => Err("usage: levelpack generate|validate [DIR] | calibrate | perf".into()),
+        Some("dorp") => {
+            let sub = args.get(1).map(String::as_str);
+            let arg = |i: usize, default: &str| PathBuf::from(args.get(i).map_or(default, String::as_str));
+            match sub {
+                Some("generate") => chess::generate(&arg(2, "web/levels/dorp")),
+                Some("validate") => chess::validate(&arg(2, "web/levels/dorp")),
+                Some("show") => match args.get(2).and_then(|n| n.parse().ok()) {
+                    Some(n) => chess::show(&arg(3, "web/levels/dorp"), n),
+                    None => Err("usage: levelpack dorp show N [DIR]".into()),
+                },
+                _ => Err("usage: levelpack dorp generate|validate [DIR] | show N [DIR]".into()),
+            }
+        }
+        _ => Err("usage: levelpack generate|validate [DIR] | calibrate | perf | dorp ...".into()),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

@@ -4,6 +4,7 @@
 //! module below touches `wasm-bindgen`.
 
 pub mod ascii;
+pub mod chess;
 pub mod generator;
 pub mod model;
 pub mod rng;
@@ -49,5 +50,80 @@ mod wasm {
     pub fn solve_count(level: &str, limit: u32) -> Result<u32, JsError> {
         let level: Level = serde_json::from_str(level)?;
         Ok(solver::count_solutions(&level, limit))
+    }
+
+    // ---------- chess ----------
+
+    use crate::chess::puzzles::{self, Puzzle, PuzzleKind};
+    use crate::chess::{self, search, Board, Move, Position};
+
+    fn board(position: &str) -> Result<Board, JsError> {
+        let p: Position = serde_json::from_str(position)?;
+        Board::from_position(&p).map_err(|e| JsError::new(&e))
+    }
+
+    fn json<T: serde::Serialize>(v: &T) -> Result<String, JsError> {
+        Ok(serde_json::to_string(v)?)
+    }
+
+    /// `{position, check, outcome}` for a position.
+    #[wasm_bindgen]
+    pub fn chess_status(position: &str) -> Result<String, JsError> {
+        json(&chess::status(&board(position)?))
+    }
+
+    /// Legal moves `[{from, to}]` of the piece on `from`.
+    #[wasm_bindgen]
+    pub fn chess_moves(position: &str, from: u8) -> Result<String, JsError> {
+        json(&board(position)?.moves_from(from as usize))
+    }
+
+    /// Play a legal move; the status after it.
+    #[wasm_bindgen]
+    pub fn chess_play(position: &str, from: u8, to: u8) -> Result<String, JsError> {
+        let b = board(position)?;
+        let m = Move { from, to };
+        if !b.is_legal(m) {
+            return Err(JsError::new("illegal move"));
+        }
+        json(&chess::status(&b.apply(m)))
+    }
+
+    /// The engine's move at strength `level` (0–3), or `null`.
+    #[wasm_bindgen]
+    pub fn chess_reply(position: &str, level: u32, seed: u32) -> Result<String, JsError> {
+        json(&search::best_move(&board(position)?, level, seed as u64))
+    }
+
+    /// The defender's most stubborn reply in a mate puzzle, or `null`.
+    #[wasm_bindgen]
+    pub fn chess_defend(position: &str, mate_left: u32) -> Result<String, JsError> {
+        json(&search::longest_defence(&board(position)?, mate_left))
+    }
+
+    /// A good next move for White, or `null`.
+    #[wasm_bindgen]
+    pub fn chess_hint(puzzle: &str, position: &str, mate_left: u32) -> Result<String, JsError> {
+        let p: Puzzle = serde_json::from_str(puzzle)?;
+        json(&puzzles::hint(&p, &board(position)?, mate_left))
+    }
+
+    /// A robber's move taking back on `square`, or `null`.
+    #[wasm_bindgen]
+    pub fn chess_recapture(position: &str, square: u8) -> Result<String, JsError> {
+        json(&puzzles::recapture(&board(position)?, square))
+    }
+
+    /// Does White mate from here within `n` moves?
+    #[wasm_bindgen]
+    pub fn chess_forces_mate(position: &str, n: u32) -> Result<bool, JsError> {
+        Ok(search::forces_mate(&board(position)?, n))
+    }
+
+    /// A new puzzle: `kind` is "Capture", "SafeCapture", "Mate", …
+    #[wasm_bindgen]
+    pub fn chess_generate(kind: &str, seed: u32, difficulty: u32) -> Result<String, JsError> {
+        let kind: PuzzleKind = serde_json::from_str(&format!("{kind:?}"))?;
+        json(&puzzles::generate(kind, seed as u64, difficulty).map_err(|e| JsError::new(&e))?)
     }
 }
