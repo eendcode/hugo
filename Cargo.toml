@@ -1,0 +1,13 @@
+[workspace]
+members = ["core", "tools/levelpack"]
+resolver = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+codegen-units = 1
+
+# The native level-pack tool is CPU-bound; only the WASM needs to be small.
+[profile.release.package.levelpack]
+opt-level = 3
