@@ -7,8 +7,10 @@
 //!     levelpack perf             time 100 levels per difficulty; fail over budget
 //!     levelpack dorp generate|validate [DIR]   the chess packs (web/levels/dorp)
 //!     levelpack dorp show N [DIR]              print stage N's boards
+//!     levelpack programma|lantaarn|wegvrij generate|validate [DIR] | show N [DIR]
 
 mod chess;
+mod packs;
 
 use duinkapel_core::generator::{self, Params, MAX_DIFFICULTY};
 use duinkapel_core::model::Level;
@@ -201,6 +203,8 @@ fn perf() -> Result<(), String> {
     }
 }
 
+const USAGE: &str = "usage: levelpack generate|validate [DIR] | calibrate | perf | dorp|programma|lantaarn|wegvrij ...";
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let dir = PathBuf::from(args.get(1).map_or("web/levels", String::as_str));
@@ -210,10 +214,9 @@ fn main() -> ExitCode {
         Some("validate") => validate(&dir).and_then(|()| {
             let dorp = dir.join("dorp");
             if dorp.join("index.json").exists() {
-                chess::validate(&dorp)
-            } else {
-                Ok(())
+                chess::validate(&dorp)?;
             }
+            packs::validate_all(&dir)
         }),
         Some("calibrate") => {
             calibrate();
@@ -233,7 +236,8 @@ fn main() -> ExitCode {
                 _ => Err("usage: levelpack dorp generate|validate [DIR] | show N [DIR]".into()),
             }
         }
-        _ => Err("usage: levelpack generate|validate [DIR] | calibrate | perf | dorp ...".into()),
+        Some(name) => packs::command(name, &args[1..]).unwrap_or_else(|| Err(USAGE.into())),
+        None => Err(USAGE.into()),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

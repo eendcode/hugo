@@ -4,10 +4,13 @@
 //! module below touches `wasm-bindgen`.
 
 pub mod ascii;
+pub mod carts;
 pub mod chess;
 pub mod generator;
+pub mod lantern;
 pub mod mansion;
 pub mod model;
+pub mod program;
 pub mod rng;
 pub mod rules;
 pub mod solver;
@@ -156,5 +159,60 @@ mod wasm {
     pub fn slide_hint(width: u8, height: u8, tiles: &str) -> Result<String, JsError> {
         let tiles: Vec<u8> = serde_json::from_str(tiles)?;
         json(&mansion::solve_slide(width as usize, height as usize, &tiles).and_then(|(_, m)| m))
+    }
+
+    // ---------- Barends programma ----------
+
+    use crate::program;
+
+    /// Run the cards: `{steps, eaten, ending, played}`.
+    #[wasm_bindgen]
+    pub fn program_run(field: &str, cards: &str) -> Result<String, JsError> {
+        let f: program::Field = serde_json::from_str(field)?;
+        let cards: Vec<program::Card> = serde_json::from_str(cards)?;
+        json(&f.run(&cards))
+    }
+
+    /// `{type: "Add", card} | {type: "Remove", index} | {type: "Go"}`.
+    #[wasm_bindgen]
+    pub fn program_hint(field: &str, cards: &str) -> Result<String, JsError> {
+        let f: program::Field = serde_json::from_str(field)?;
+        let cards: Vec<program::Card> = serde_json::from_str(cards)?;
+        json(&program::hint(&f, &cards))
+    }
+
+    // ---------- Lantaarnlicht ----------
+
+    use crate::lantern;
+
+    fn placed(placed: &str) -> Result<std::collections::HashMap<u8, lantern::Mirror>, JsError> {
+        let list: Vec<(u8, lantern::Mirror)> = serde_json::from_str(placed)?;
+        Ok(list.into_iter().collect())
+    }
+
+    /// The beam with these mirrors `[[cell, "Slash"|"Backslash"], …]`: `{path, end, lit, won}`.
+    #[wasm_bindgen]
+    pub fn lantern_trace(field: &str, mirrors: &str) -> Result<String, JsError> {
+        let f: lantern::Field = serde_json::from_str(field)?;
+        json(&f.trace(&placed(mirrors)?))
+    }
+
+    /// `{cell, mirror}` to change next, or `null`.
+    #[wasm_bindgen]
+    pub fn lantern_hint(field: &str, mirrors: &str) -> Result<String, JsError> {
+        let f: lantern::Field = serde_json::from_str(field)?;
+        json(&lantern::hint(&f, &placed(mirrors)?))
+    }
+
+    // ---------- Maak de weg vrij ----------
+
+    use crate::carts;
+
+    /// The next move `{cart, to}` of a shortest way out, or `null`.
+    #[wasm_bindgen]
+    pub fn carts_hint(yard: &str, positions: &str) -> Result<String, JsError> {
+        let y: carts::Yard = serde_json::from_str(yard)?;
+        let positions: Vec<u8> = serde_json::from_str(positions)?;
+        json(&carts::hint(&y, &positions))
     }
 }

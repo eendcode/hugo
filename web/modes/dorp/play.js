@@ -16,12 +16,12 @@ const isBlack = (ch) => /[kqrbnp]/.test(ch);
 
 export class ChessScreen {
   /**
-   * opts: puzzle, label, strength (0–3), onWin(stars), onNext(), onReplay(), onHome(), onMenu()
+   * opts: level (the puzzle), label, strength (0–3), onWin(stars), onNext(), onReplay(), onHome(), onMenu()
    */
   constructor(root, opts) {
     this.root = root;
     this.opts = opts;
-    this.puzzle = opts.puzzle;
+    this.puzzle = opts.level;
     this.kind = this.puzzle.kind;
     this.core = app.core;
     this.input = app.input;

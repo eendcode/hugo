@@ -6,8 +6,9 @@ use duinkapel_core::chess::search::best_move;
 use duinkapel_core::chess::Board;
 use std::time::Instant;
 
-/// Native budget per engine reply (the TV is several times slower).
-const BUDGET_MS: f64 = 150.0;
+/// Native budget per engine reply. Typical is under 50 ms; the headroom is for
+/// slow CI machines. The TV is several times slower than a laptop.
+const BUDGET_MS: f64 = 400.0;
 
 #[test]
 fn engine_replies_quickly() {

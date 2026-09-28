@@ -142,7 +142,7 @@ h2 {
 }
 
 /* A very visible focus ring, readable at 3 metres. Only while using keys. */
-body.kbd .is-focused:not(.cell):not(.stop):not(.sq):not(.room-slot):not(.pane):not(.square) {
+body.kbd .is-focused:not(.cell):not(.stop):not(.sq):not(.room-slot):not(.pane):not(.square):not(.yard-cell) {
   outline: 6px solid var(--focus);
   outline-offset: 4px;
   box-shadow: 0 0 0 12px rgba(0, 0, 0, 0.55);
@@ -1431,6 +1431,285 @@ g.wiggle {
   text-anchor: middle;
 }
 
+/* ---------- Barends programma ---------- */
+
+.prog .side {
+  justify-content: flex-start;
+}
+
+.program {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--gap) * 0.6);
+  padding: var(--gap);
+  background: rgba(10, 14, 40, 0.5);
+  border: 3px dashed #3d4c8a;
+  border-radius: 20px;
+}
+
+.program.nudge {
+  animation: nudge 0.5s;
+}
+
+.palette {
+  display: flex;
+  gap: var(--gap);
+  justify-content: center;
+}
+
+.card-btn,
+.program .slot {
+  width: clamp(48px, 9vmin, 110px);
+  height: clamp(48px, 9vmin, 110px);
+  border-radius: 14px;
+  flex: none;
+}
+
+.card-btn {
+  padding: 4px;
+  background: #fff3c4;
+  border: 4px solid #b8862a;
+  cursor: pointer;
+}
+
+.card-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.program .slot {
+  border: 3px dashed #3d4c8a;
+}
+
+.card-btn.running {
+  border-color: #3aa0e0;
+  box-shadow: 0 0 20px #3aa0e0;
+  transform: translateY(-4px);
+}
+
+.card-arrow {
+  fill: #d8433a;
+  stroke: #6b2a1a;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.card-arrow.fwd {
+  fill: #3f9f5a;
+  stroke: #1f4a2a;
+}
+
+.card-turn {
+  fill: none;
+  stroke: #3f7fd0;
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.card-count circle {
+  fill: #1b1330;
+}
+
+.card-count text {
+  font: 800 26px var(--font);
+  fill: #fff3c4;
+  text-anchor: middle;
+}
+
+.goat-actor {
+  transition: transform 0.38s ease-in-out;
+}
+
+.goat-actor .goat-flip {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.goat-actor[data-facing='W'] .goat-flip {
+  transform: scaleX(-1);
+}
+
+.facing-mark {
+  display: none;
+  fill: #ffd35a;
+  stroke: #6b4a2a;
+  stroke-width: 2;
+}
+
+.relative .facing-mark {
+  display: inline;
+}
+
+.goat-actor.bump .goat-face {
+  animation: wiggle 0.3s 3;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.walking .goat-actor .barend {
+  animation: trot 0.4s ease-in-out infinite;
+}
+
+.apple-slot {
+  transition: opacity 0.3s, transform 0.3s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.apple-slot.eaten {
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.prog .go {
+  grid-column: span 2;
+}
+
+/* ---------- Lantaarnlicht ---------- */
+
+.light .cell {
+  cursor: pointer;
+}
+
+.light .ground {
+  fill: #1c2a55;
+}
+
+.light .cell-wall .ground,
+.light .cell-lantern .ground,
+.light .cell-stone .ground,
+.light .cell-fixed .ground {
+  fill: #151f44;
+}
+
+.light .items,
+.light .beam,
+.light .fx {
+  pointer-events: none;
+}
+
+.beam-glow {
+  fill: none;
+  stroke: #ffd35a;
+  stroke-width: 22;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.35;
+  filter: url(#f-soft);
+}
+
+.beam-core {
+  fill: none;
+  stroke: #fff3b0;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fixed-plate {
+  fill: #2a3560;
+  stroke: #6770a8;
+  stroke-width: 3;
+}
+
+.moonstone.lit {
+  animation: glow 1s ease-in-out infinite alternate;
+}
+
+.mirror-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  justify-content: center;
+  padding: var(--gap);
+  background: rgba(10, 14, 40, 0.5);
+  border: 3px dashed #3d4c8a;
+  border-radius: 20px;
+}
+
+.mirror-tray.nudge {
+  animation: nudge 0.5s;
+}
+
+.tray-mirror {
+  width: clamp(40px, 8vmin, 90px);
+  height: clamp(40px, 8vmin, 90px);
+}
+
+.tray-mirror.used {
+  opacity: 0.2;
+}
+
+.light .cell.hint-flash,
+.yard .cart.hint-flash,
+.prog .hint-flash {
+  animation: hint-flash 0.6s ease-in-out 4;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ---------- Maak de weg vrij ---------- */
+
+.cobble {
+  fill: #5a5a70;
+  stroke: #45455a;
+  stroke-width: 3;
+}
+
+.yard .hit .yard-cell {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.yard .marks,
+.yard .carts,
+.yard .dots {
+  pointer-events: none;
+}
+
+.yard .cart {
+  transition: transform 0.3s ease-in-out;
+}
+
+.yard .cart.leaving {
+  transition: transform 0.6s ease-in;
+}
+
+.yard .cart.selected .cart-art {
+  filter: drop-shadow(0 0 10px #ffe14d);
+}
+
+.yard .dot {
+  fill: #ffe14d;
+  opacity: 0.7;
+}
+
+.gate {
+  animation: glow 1.4s ease-in-out infinite alternate;
+}
+
+.exit-arrow {
+  fill: none;
+  stroke: #ffd35a;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+
+.hint-mark {
+  fill: #9fe8ff33;
+  stroke: #9fe8ff;
+  stroke-width: 8;
+  animation: pulse 0.65s ease-in-out 4;
+}
+
+.yard .buttons,
+.light .buttons,
+.prog .buttons {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 /* ---------- overlays and menu ---------- */
 
 .overlay {
@@ -1564,7 +1843,10 @@ g.wiggle {
 
   .buttons,
   .chess .buttons,
-  .room .buttons {
+  .room .buttons,
+  .yard .buttons,
+  .light .buttons,
+  .prog .buttons {
     grid-template-columns: repeat(6, 1fr);
   }
 

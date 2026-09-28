@@ -11,9 +11,12 @@ import { app, applySettings, lanternSpinner, leavePlay, showStory, openMenu } fr
 import duinkapel from './modes/duinkapel.js';
 import dorp from './modes/dorp/index.js';
 import spookhuis from './modes/spookhuis/index.js';
+import programma from './modes/programma/index.js';
+import lantaarn from './modes/lantaarn/index.js';
+import wegvrij from './modes/wegvrij/index.js';
 
 /** The game modes, in menu order. */
-const MODES = [duinkapel, dorp, spookhuis];
+const MODES = [duinkapel, dorp, spookhuis, programma, lantaarn, wegvrij];
 
 // ---------- boot ----------
 

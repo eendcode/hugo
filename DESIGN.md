@@ -36,13 +36,13 @@ A spooky-but-safe night adventure in the Brabant dunes. It draws on **public-dom
 
 ### Story (told in 4–6 short picture screens, Dutch, parent reads aloud)
 
-1. One stormy night, the goat-riding robbers of **Hoofdman Graaiert** raided the **Duinkapel**. They scattered its treasures across the dunes: the silver candlestick, the golden cup, and the little bell.
+1. One stormy night, the goat-riding robbers of **Hoofdman Hugo** raided the **Duinkapel**. They scattered its treasures across the dunes: the silver candlestick, the golden cup, and the little bell.
 2. Since then, **de Witte Dame** floats through the mist at night. She is the chapel's sad guardian, and she scares away anyone who comes near.
 3. **Pim** and his brave goat **Barend** decide to bring every treasure back. Each road Pim builds leads him, lantern in hand, across the dunes.
 4. On the way, he must **stay out of the ghost mist** and **dodge the Witte Dame** where she drifts.
 5. **Finale:** when the last treasure is back, the bell rings. The Witte Dame smiles for the first time, her mist lifts, and the sun comes up over the dunes. The scary thing turns out to be okay. This arc is intentional: the fear resolves into safety.
 
-Graaiert only appears in the intro and outro, as a silly-scary silhouette on a goat. He never appears in levels.
+Hugo only appears in the intro and outro, as a silly-scary silhouette on a goat. He never appears in the road game's levels. (He was first called Graaiert; the other game modes, added later, give him a bigger part: he is the black king in the chess village and the cursed owner of the haunted house.)
 
 ### How the theme maps onto the puzzle
 
@@ -293,6 +293,8 @@ A single focus/cursor model serves both input methods.
 ---
 
 ## 9. Future ideas (out of scope for v1, keep the core reusable)
+
+> Since v1, the game has a mode menu and five more modes (see README.md): a chess village, Hugo's haunted house, Barend's program (the robot idea below), lantern light, and a Rush Hour-style cart yard (the sliding-block idea below).
 
 - "Draaien" rotate-only mode (§2.4).
 - More puzzle types that could share the grid, solver and generator infrastructure:

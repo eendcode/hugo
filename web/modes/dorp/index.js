@@ -3,84 +3,10 @@
 
 import { t } from '../../i18n.js';
 import * as store from '../../storage.js';
-import { app, fetchJson, leavePlay, showStory, storyOnce, openMenu, stageMap, cleared, firstOpenLevel, showSpinner } from '../../shell.js';
+import { app } from '../../shell.js';
+import { packMode, pages } from '../packmode.js';
 import { ChessScreen } from './play.js';
 import { scene, goal, card } from './art.js';
-
-const ID = 'dorp';
-const INTRO = ['raid', 'square', 'help'];
-const FINALE_STAGE = 8;
-
-let index = null;
-const packs = {};
-
-const scenes = (names) => names.map((n) => (opts) => scene(n, opts));
-
-async function pack(stage) {
-  if (!packs[stage]) {
-    const info = index.stages.find((s) => s.stage === stage);
-    packs[stage] = await fetchJson(`levels/dorp/${info.file}`);
-  }
-  return packs[stage];
-}
-
-async function start() {
-  if (!index) {
-    showSpinner(t('loading'));
-    index = await fetchJson('levels/dorp/index.json');
-  }
-  storyOnce(ID, scenes(INTRO), t('dorpStory'), showMap);
-}
-
-function need(stage) {
-  return index.stages.find((s) => s.stage === stage)?.need ?? 1;
-}
-
-function showMap() {
-  stageMap({
-    modeId: ID,
-    stages: index.stages.map((info) => ({ stage: info.stage, count: info.count, name: t('dorpStages')[info.stage - 1] ?? '', need: info.need })),
-    scene: scene('map', { scare: store.settings().scare }),
-    goal: goal(),
-    onStage: (n) => playLevel(n, firstOpenLevel(ID, n, index.stages.find((s) => s.stage === n).count)),
-    onBack: app.home,
-    onStory: () => showStory(scenes(INTRO), t('dorpStory'), showMap),
-    menu: () => openMenu(showMap, menuExtra()),
-  });
-}
-
-async function playLevel(stage, level) {
-  leavePlay();
-  const p = await pack(stage);
-  const puzzle = p.puzzles[level];
-  const m = store.mode(ID);
-  m.current = { stage, level };
-  store.save();
-  app.current = { mode: ID, stage, level, data: puzzle };
-  const wasCleared = cleared(ID, stage, need(stage));
-  app.play = new ChessScreen(app.el, {
-    puzzle,
-    label: `${t('stage', { n: stage })} · ${t('levelOf', { n: level + 1, total: p.puzzles.length })}`,
-    strength: store.settings().chessLevel,
-    onWin: (stars) => store.recordWin(ID, stage, level, stars),
-    onNext: () => {
-      const justCleared = !wasCleared && cleared(ID, stage, need(stage));
-      if (justCleared && stage === FINALE_STAGE && !m.finaleSeen) {
-        return showStory(scenes(['feast']), t('dorpFinale'), () => {
-          m.finaleSeen = true;
-          store.save();
-          showMap();
-        });
-      }
-      if (justCleared) return showMap();
-      if (level + 1 < p.puzzles.length) playLevel(stage, level + 1);
-      else showMap();
-    },
-    onReplay: () => playLevel(stage, level),
-    onHome: showMap,
-    onMenu: () => openMenu(null, menuExtra()),
-  });
-}
 
 /** Adult-menu row: how well the bokkenrijders play. */
 function menuExtra() {
@@ -100,9 +26,19 @@ function menuExtra() {
   };
 }
 
-export default {
-  id: ID,
-  name: () => t('modes').dorp,
+export default packMode({
+  id: 'dorp',
+  dir: 'dorp',
+  key: 'puzzles',
+  Screen: ChessScreen,
+  intro: pages(scene, ['raid', 'square', 'help']),
+  introKey: 'dorpStory',
+  finale: pages(scene, ['feast']),
+  finaleKey: 'dorpFinale',
+  stagesKey: 'dorpStages',
+  scene: (o) => scene('map', o),
+  goal,
   card,
-  start,
-};
+  screenOpts: () => ({ strength: store.settings().chessLevel }),
+  menuExtra,
+});

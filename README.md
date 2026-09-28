@@ -1,22 +1,41 @@
 # Het Geheim van de Duinkapel
 
-A road-building puzzle game for a five-year-old, played in the browser on a
-tablet, phone, laptop or TV (Google TV / Chromecast browser with the remote).
-Pim and his goat Barend build roads across the night dunes to bring the stolen
-treasures back to the Duinkapel. Along the way they stay out of the ghost mist
-and dodge the Witte Dame.
+Puzzle games for a five-year-old, played in the browser on a tablet, phone,
+laptop or TV (Google TV / Chromecast browser with the remote). Pim and his
+goat Barend take on the bokkenrijders of Hoofdman Hugo in six game modes,
+chosen from a picture menu after **Spelen**:
+
+| Mode | What you do |
+|---|---|
+| ⛪ **De Duinkapel** | Build roads across the night dunes to bring the stolen treasures back to the chapel |
+| ♞ **Verdedig het dorp** | Chess: a piece refresher, safe captures, mate in one and two, and games against the robbers |
+| 🕯 **Het spookhuis van Hugo** | Nine rooms of picture and number puzzles; light every candle to break the curse |
+| 🐐 **Barends programma** | Lay arrow cards, press Start, and Barend walks the program |
+| 🔦 **Lantaarnlicht** | Place mirrors so the lantern's beam lights every moonstone |
+| 🛒 **Maak de weg vrij** | Slide the robbers' carts aside so Barend's cart can leave the yard |
 
 - Puzzle logic in **Rust → WebAssembly** (`core/`), rendering and input in plain
   JavaScript ES modules (`web/`). No framework, bundler, backend or network calls
   after load.
-- 8 stages × 30 pre-generated levels, from easy 4×4 to hard 6×6. Every level has
-  exactly one solution. Parents can also generate new puzzles live.
+- Every puzzle has a solver behind it: levels are checked to have one
+  solution where that matters, hints are exact, and stars compare against
+  the best possible.
 - All art is drawn procedurally in SVG, and all sounds are synthesised with Web
   Audio. There are no image or audio assets. The characters and story are
   original; the folklore they draw on (bokkenrijders, witte wieven) is public
   domain.
+- Nothing in the puzzles needs reading. Each screen has one short goal line
+  that a parent can read aloud.
 
 ## Playing
+
+Every mode has the same frame: a short picture story the first time, a map
+of stages (or rooms), and play screens with **Oeps** (undo), 💡 **Hint**,
+**Kaart** (back to the map) and ⚙. There are no timers and no lives. Stars
+(★★★) reward a clean solve; hints cost a star. On the remote, arrow keys
+move the focus, OK chooses, and Back undoes (or goes back a screen).
+
+### De Duinkapel (roads)
 
 **Goal:** connect Pim (start) to the chapel (finish) with road pieces from the
 tray. The route must pick up the treasures (in numbered order when shown), may
@@ -49,16 +68,84 @@ On the remote, **Back** undoes the last move. With nothing left to undo, it
 goes back to the map, and on other screens it closes menus or goes back one
 screen. It never leaves the page.
 
-**Progress:** finishing 10 levels of a stage opens the next one. Clearing
+### Verdedig het dorp (chess)
+
+White are the villagers, black the bokkenrijders (their knight is a goat,
+their king is Hugo). Tap a piece to see where it can go, then tap a square.
+Village rules: no castling, no en passant, pawns become queens.
+
+1. **De stukken** – one piece captures every robber; stars for the fewest moves.
+2. **Veilig slaan** – take the one robber that can't be taken back. A wrong
+   choice shows the robber taking back, then undoes it.
+3. **Schaakmat!** and 4. **Het grote bord** – mate in one on small boards, then 8×8.
+   A wrong move shows how Hugo escapes.
+5. **Pionnenrace** – pawns only; the first to reach the other side wins.
+6. **Vang de hoofdman** – mate a lone king with queen or rooks.
+7. **Mat in twee** – the robbers defend as well as they can.
+8. **De grote slag** – small-board games with the robbers a few pieces short.
+
+In the games (5, 6, 8) the robbers answer each move. **Oeps** takes back
+your move and theirs, also after a loss. The adult menu sets how well they
+play (Heel makkelijk / Makkelijk / Gemiddeld / Sterk).
+
+### Het spookhuis van Hugo
+
+Hugo's spell went wrong: the candles are out and he is stuck in a painting.
+The house map shows nine rooms. Solving 5 of a room's puzzles (6 in the
+counting room) lights its candle, and each candle opens another room. When
+all nine burn, the curse breaks.
+
+| Room | Puzzle |
+|---|---|
+| De hal | Candles: touching one flips it and its neighbours; light them all |
+| De schilderijenzaal | Find the pairs |
+| De kelder | Turn the pipes until water reaches every pipe |
+| De galerij | What comes next? Colours, shapes, counts, turning arrows |
+| De rekenkamer | Number sequences: counting on and back, steps of 2, 5 and 10, doubling, growing steps, missing numbers, Fibonacci and squares |
+| De bibliotheek | Slide the portrait back together |
+| Het spiegelraam | Make the right half of the window mirror the left |
+| De zolder | Which shadow belongs to the toy? |
+| De klokkentoren | Listen to the bells and play the tune back |
+
+### Barends programma
+
+Tap arrow cards to lay them in the slots, tap a laid card to make it 2 or 3
+steps, and press **Start**. Barend eats every apple he passes and is home
+when he reaches his stable with all the apples. Later stages use
+**forward / turn left / turn right** cards instead of arrows. Remove a card
+with long-press, `Backspace`/`Delete`, or **Terug** (the last card). A hint
+adds the next card of a shortest program, or takes a wrong one away.
+
+### Lantaarnlicht
+
+Tap an empty square to put a mirror there, again to turn it, and once more
+to take it back. The beam is redrawn after every change; moonstones light
+up when it touches them. Bolted mirrors can't be moved.
+
+### Maak de weg vrij
+
+Tap a cart, then one of the dots to slide it there (carts only move along
+their length). Get Barend's red cart out through the gate on the right.
+The goal line says how few moves it can be done in.
+
+### Progress
+
+**Road game:** finishing 10 levels of a stage opens the next one. Clearing
 stages 3, 5 and 8 returns the kandelaar, the beker and the klokje. The
 finale plays after the last one. Stars: ★★★ without hints, ★★ with up to
 two hints, ★ otherwise. Progress is saved in `localStorage`. The game still
 works without it; the adult menu then says that nothing is saved.
 
+**Other modes:** each stage opens after finishing some of the previous
+one's levels (the stage file says how many), and the last stage ends with a
+short finale. Progress is kept per mode; saves from before the modes
+existed are moved into the road game's progress on load.
+
 **Voor ouders (⚙):** Griezelstand (Zacht / Spannend / Eng), sound, language
-(Nederlands / English), live puzzles (Makkelijker / Nieuwe puzzel /
+(Nederlands / English), unlocking all stages and rooms, and resetting
+progress. In the road game also: live puzzles (Makkelijker / Nieuwe puzzel /
 Moeilijker, difficulty 0–9), the current puzzle's code (seed) and replaying a
-code, unlocking all stages, and resetting progress.
+code. In the chess village: how well the robbers play.
 
 ## Building and running
 
@@ -75,8 +162,9 @@ Then:
 ```sh
 make serve        # builds web/pkg and serves http://localhost:8080/
 make test         # Rust unit, property (proptest) and performance tests
-make validate     # re-solve every committed level: exactly one solution, seed reproduces it
-make levels       # regenerate web/levels (then commit them)
+make validate     # re-check every committed level and puzzle in every pack
+make levels       # regenerate all packs in web/levels (then commit them)
+make levels-dorp  # just one pack: levels-roads, -dorp, -programma, -lantaarn, -wegvrij
 make calibrate    # score distribution per difficulty (for the bands in generator.rs)
 make perf         # time 100 levels per difficulty and board size
 ```
@@ -123,26 +211,40 @@ provides the HTTPS that a future Chromecast Web Receiver would need.
 ## Project layout
 
 ```
-core/                 Rust crate: model, rules, solver, generator (native + WASM)
-  src/model.rs        Side, Tile, Cell, Level, State (serde JSON shapes)
-  src/rules.rs        route finding and win check (mist, treasure order, Dame)
-  src/solver.rs       backtracking solver, solution counting, hints
-  src/generator.rs    seeded generation, repair to a unique solution, scoring
+core/                 Rust crate: models, rules, solvers, generators (native + WASM)
+  src/model.rs        road game: Side, Tile, Cell, Level, State (serde JSON shapes)
+  src/rules.rs        road game: route finding and win check (mist, treasure order, Dame)
+  src/solver.rs       road game: backtracking solver, solution counting, hints
+  src/generator.rs    road game: seeded generation, repair to a unique solution, scoring
+  src/chess/          chess: board and moves, engine and mate solver, puzzle generators
+  src/mansion.rs      haunted house: candles (lights out) and the sliding portrait
+  src/program.rs      Barend's program: running cards, shortest program, hints
+  src/lantern.rs      lantern light: beam tracing, mirror solver, generator
+  src/carts.rs        cart yard: sliding moves, BFS solver, generator
   src/rng.rs          SplitMix64 (no getrandom)
-  src/ascii.rs        text format for hand-made test levels
-  src/lib.rs          thin wasm-bindgen API: generate / check / hint / solve_count
-  tests/              property tests and the generation performance test
+  src/ascii.rs        text format for hand-made road test levels
+  src/lib.rs          thin wasm-bindgen API
+  tests/              property tests, generation and engine performance tests
 tools/levelpack/      generate, validate, calibrate and benchmark level packs
 web/                  the static site
-  main.js             boot, WASM loading with fallback, screens, adult menu
-  board.js            play screen: SVG board, tray, feedback, celebration
-  game.js             per-level state, undo, hints (calls the core)
+  main.js             boot, WASM loading with fallback, title and mode menu
+  shell.js            shared: story pages, stage map, win overlay, adult menu
+  modes/duinkapel.js  the road game's map, stages and live puzzles
+  board.js, game.js   the road game's play screen and level state
+  modes/packmode.js   a mode built on level packs (stages, map, next/replay, finale)
+  modes/gridplay.js   base play screen for the program, lantern and cart modes
+  modes/dorp/         chess village: play screen, piece art, mode
+  modes/spookhuis/    haunted house: house map, room frame, the nine puzzles
+  modes/programma/    Barend's program
+  modes/lantaarn/     lantern light
+  modes/wegvrij/      cart yard
   input.js            unified touch/mouse + keyboard/D-pad focus model, Back button
-  art.js              procedural SVG art and story scenes
-  audio.js            Web Audio sounds and Griezelstand ambience
+  art.js              shared procedural SVG art and story scenes
+  audio.js            Web Audio sounds, bell notes and Griezelstand ambience
   i18n.js             Dutch strings (+ English)
-  storage.js          progress in localStorage (every access in try/catch)
-  levels/             committed level packs (index.json + stage-N.json)
+  rng.js              seeded PRNG for puzzles made in the browser
+  storage.js          progress per mode in localStorage (every access in try/catch)
+  levels/             committed packs: road stages, and dorp/ programma/ lantaarn/ wegvrij/
 deploy/nginx.conf     Pi web server config
 ```
 
@@ -187,6 +289,47 @@ deploy/nginx.conf     Pi web server config
   fixed-orientation pieces (`rotatable: false`), for use as a difficulty knob
   or if the physical game works that way.
 
+### How the other modes work
+
+- **Chess** (`core/src/chess/`): boards from 4×4 to 8×8 with trees as
+  blockers. Legal moves come from pseudo-legal moves filtered for leaving the
+  own king in check (boards without a king skip that). The engine is negamax
+  alpha-beta with a capture search, material plus simple piece-square terms, a
+  pawn-race term, and a mop-up term that drives a lone king to the edge. It is
+  capped at 150,000 nodes per move. Strength levels change depth, the margin
+  within which moves count as equally good, and the chance of a careless (but
+  not losing) move. The engine never misses a mate. Puzzles: capture-all uses a
+  BFS over boards for the fewest moves; safe capture needs exactly one capture
+  that no robber can take back; mate in N needs exactly one first move, and
+  mate in 2 must have no mate in 1. In a mate-in-2 puzzle the robbers reply
+  with the defence that holds out longest. `levelpack dorp` keeps the middle of
+  three candidates by score and orders each stage easy to hard.
+- **Haunted house**: candles is lights out, solved exactly by Gauss–Jordan
+  elimination over GF(2), trying every free variable for the fewest touches.
+  Puzzles are made by random touches from all lit, and kept only if that count
+  is already the minimum. The sliding portrait uses a table of distances from
+  solved for every position of the board (181,440 for 3×3), built once. That
+  table gives exact move targets and hints. The other rooms are generated in
+  the browser from a seed per room and level (`web/rng.js`), so a level is the
+  same every time. Pipes are a random spanning tree turned out of place;
+  shadows get distractors with a part missing, moved, swapped or mirrored. Every
+  room's levels are checked to be solvable.
+- **Barend's program**: a BFS over (cell, facing, apples eaten), where one
+  step is one card, gives the fewest cards. The slots are that plus a
+  stage-dependent spare. A hint finds the longest prefix of the laid cards
+  that can still finish within the slots, then adds the next card of a
+  shortest program or removes the card after that prefix.
+- **Lantern light**: the solver follows the beam and, on each empty square
+  it crosses, tries passing straight or either mirror within the tray's
+  count. The generator walks a beam with turns and puts stones on straight
+  stretches, the last one at the far end. It then repairs the field until one
+  set of mirrors works: it walls off squares only another solution uses, or
+  bolts down one of the real mirrors (never below the stage's minimum).
+- **Cart yard**: a random yard is explored completely, and a multi-source
+  BFS from every solved position gives each position's distance. A position
+  in the stage's band becomes the level, so the move count shown is exact.
+  Hints are a BFS from the current position.
+
 ## Testing checklist (frontend)
 
 The repo has no browser test runner. These checks were run in headless
@@ -202,4 +345,9 @@ Chromium via Playwright, outside the repo. Re-check them on the real TV.
 - [x] Wrong WASM MIME type (`text/plain`): loads through the fallback
 - [x] Back button (history sentinel): undoes, then goes back to the map, and never leaves the page
 - [x] Portrait tablet and 16:9 layouts; live puzzle generation from the adult menu
-- [ ] **On the actual TV browser:** remote Back button behaviour, focus ring readable at 3 m, sound
+- [x] Mode menu (landscape and portrait); old saves move into the road game's progress
+- [x] Chess: capture-all won by hints; a wrong mate shows the escape and undoes; a pawn race won against the engine; keyboard-only moves; Back undoes
+- [x] Haunted house: every level of every room machine-solved (hints or the core's solution), candle lit after 5 wins, next room opens; pairs, bells (with a mistake), portrait layout
+- [x] Barend's program: arrow and turning stages won via hints; bump and "not home" messages; count cycling, Backspace removal and undo with the keyboard
+- [x] Lantern light and cart yard: won via hints, with exact par for the cart yard
+- [ ] **On the actual TV browser:** remote Back button behaviour, focus ring readable at 3 m, sound, engine reply time
