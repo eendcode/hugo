@@ -188,6 +188,14 @@ impl std::fmt::Display for GenError {
 impl std::error::Error for GenError {}
 
 const MAX_ATTEMPTS: usize = 400;
+/// Attempts before giving up when not a single one has worked out. Nearly
+/// every seed finds a level well within MAX_ATTEMPTS, but on a small,
+/// crowded board some settings rarely work out: on 4×4 with the Dame
+/// (difficulty 5) about four in five attempts leave her no other route to
+/// guard, and about one seed in 500 had no level in its first 400. Going on
+/// changes no level that was found before: the attempts run in the same
+/// order, and a seed with a level in its first MAX_ATTEMPTS stops there.
+const LAST_ATTEMPT: usize = 25 * MAX_ATTEMPTS;
 /// Good levels outside the score band to try before taking the closest one.
 const BAND_MISSES: usize = 6;
 const REPAIR_ROUNDS: usize = 60;
@@ -206,7 +214,11 @@ pub fn generate_with(seed: u64, difficulty: u32, params: &Params) -> Result<Leve
     let mut rng = Rng::new(seed ^ ((difficulty as u64) << 48) ^ ((params.width as u64) << 56));
     let mut fallback: Option<Level> = None;
     let mut misses = 0;
-    for attempt in 0..MAX_ATTEMPTS {
+    for attempt in 0..LAST_ATTEMPT {
+        // Past MAX_ATTEMPTS only while nothing at all has been found.
+        if attempt == MAX_ATTEMPTS && fallback.is_some() {
+            break;
+        }
         let sub = rng.next_u64();
         let Some(mut level) = attempt_level(sub, params) else { continue };
         level.seed = seed;
@@ -715,6 +727,15 @@ mod tests {
             assert_eq!(a, b);
         }
         assert_ne!(generate(1, 2, 5).unwrap(), generate(2, 2, 5).unwrap());
+    }
+
+    #[test]
+    fn crowded_small_boards_still_find_a_level() {
+        // 4×4 with the Dame: these seeds had no level in their first MAX_ATTEMPTS.
+        for seed in [10266815317593512953, 16368858156608793157, 14719040279234211750] {
+            let level = generate(seed, 5, 4).unwrap();
+            assert!(!level.patrol.is_empty());
+        }
     }
 
     #[test]
