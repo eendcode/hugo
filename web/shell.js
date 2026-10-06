@@ -14,6 +14,7 @@ export const app = {
   screen: null, // name of the current screen, for resize handling
   current: null, // what is being played, for the adult menu
   home: null, // () => show the mode menu
+  startMode: null, // (id) => start that game mode, as from the mode menu
 };
 
 export async function fetchJson(path) {
@@ -55,7 +56,9 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export function showStory(scenes, pages, done, opts = {}) {
   leavePlay();
   let k = 0;
+  let shownAt = 0;
   const render = () => {
+    shownAt = Date.now();
     const s = store.settings();
     const art = typeof scenes[k] === 'function' ? scenes[k]({ scare: s.scare, ...opts }) : scene(scenes[k], { scare: s.scare, ...opts });
     app.el.innerHTML = `
@@ -73,7 +76,8 @@ export function showStory(scenes, pages, done, opts = {}) {
     if (scenes[k] === 'bell') audio.play('chapel');
     app.input.setScreen(app.el, {
       initial: 'next',
-      activate: (el) => (el.dataset.nav === 'next' ? go(1) : go(-1)),
+      // A quick second tap belongs to the first one: don't skip a page.
+      activate: (el) => Date.now() - shownAt >= 350 && go(el.dataset.nav === 'next' ? 1 : -1),
       back: () => (k > 0 ? go(-1) : done()),
     });
   };
@@ -234,10 +238,11 @@ export function autoLayout(n, portrait) {
 
 /**
  * A path of stage stops over a backdrop, ending at a goal picture.
- * opts: modeId, stages [{stage, count, name, badge?, need?}], scene (1600×900 SVG),
- *       goal (100×100 SVG), layouts {landscape, portrait} (optional),
+ * opts: modeId, stages [{stage, count, name, badge?, need?, caption?, progress?}],
+ *       scene (1600×900 SVG), goal (100×100 SVG), layouts {landscape, portrait} (optional),
  *       onStage(n), onBack(), onStory()?, menu()
  * A stage's `need` (default LEVELS_TO_CLEAR) is how many of its levels open the next.
+ * `caption` and `progress` replace the default "Etappe n: name" and "done/count · stars★".
  */
 export function stageMap(opts) {
   leavePlay();
@@ -263,7 +268,7 @@ export function stageMap(opts) {
         <circle class="disc" r="62"/>
         ${info.badge ? `<g transform="translate(24 -92) scale(.5)">${info.badge}</g>` : ''}
         ${open ? `<text class="num" y="20">${info.stage}</text>` : `<g transform="translate(-26 -26) scale(2.2)" class="lock">${icon('lock').replace(/<\/?svg[^>]*>/g, '')}</g>`}
-        ${open ? `<text class="progress" y="100">${done}/${info.count} · ${stars}★</text>` : ''}
+        ${open ? `<text class="progress" y="100">${info.progress ?? `${done}/${info.count} · ${stars}★`}</text>` : ''}
       </g>`;
     })
     .join('');
@@ -291,7 +296,8 @@ export function stageMap(opts) {
       const id = el?.dataset.nav || '';
       if (id.startsWith('s')) {
         const n = Number(id.slice(1));
-        caption.textContent = `${t('stage', { n })}: ${stages.find((s) => s.stage === n)?.name ?? ''}`;
+        const info = stages.find((s) => s.stage === n);
+        caption.textContent = info?.caption ?? `${t('stage', { n })}: ${info?.name ?? ''}`;
       }
     },
     activate: (el) => {

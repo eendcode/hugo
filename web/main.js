@@ -14,9 +14,10 @@ import spookhuis from './modes/spookhuis/index.js';
 import programma from './modes/programma/index.js';
 import lantaarn from './modes/lantaarn/index.js';
 import wegvrij from './modes/wegvrij/index.js';
+import saga from './modes/saga/index.js';
 
 /** The game modes, in menu order. */
-const MODES = [duinkapel, dorp, spookhuis, programma, lantaarn, wegvrij];
+const MODES = [saga, duinkapel, dorp, spookhuis, programma, lantaarn, wegvrij];
 
 // ---------- boot ----------
 
@@ -44,6 +45,7 @@ async function boot() {
   app.el = document.getElementById('screen');
   app.input = new Input();
   app.home = showModes;
+  app.startMode = startMode;
   document.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
   document.addEventListener('keydown', () => audio.unlock(), { capture: true });
   app.el.innerHTML = `<div class="center-msg">${lanternSpinner()}<p>${t('loading')}</p></div>`;
@@ -98,6 +100,13 @@ function showTitle() {
 
 // ---------- mode menu ----------
 
+function startMode(id) {
+  const mode = MODES.find((m) => m.id === id);
+  if (!mode) return showModes();
+  store.setSetting('lastMode', mode.id);
+  mode.start();
+}
+
 function showModes() {
   leavePlay();
   app.screen = 'modes';
@@ -106,7 +115,7 @@ function showModes() {
     (m) => `<button class="mode-card" data-nav="m-${m.id}">
       <svg viewBox="0 0 200 150" aria-hidden="true">${m.card()}</svg>
       <span class="mode-name">${m.name()}</span>
-      <span class="mode-stars">${icon('star', 'on')}${store.totalStars(m.id)}</span>
+      <span class="mode-stars">${icon('star', 'on')}${m.stars?.() ?? store.totalStars(m.id)}</span>
     </button>`,
   ).join('');
   app.el.innerHTML = `
@@ -127,10 +136,8 @@ function showModes() {
       if (id === 'home') showTitle();
       else if (id === 'menu') openMenu(showModes);
       else if (id.startsWith('m-')) {
-        const mode = MODES.find((m) => `m-${m.id}` === id);
-        store.setSetting('lastMode', mode.id);
         audio.play('select');
-        mode.start();
+        startMode(id.slice(2));
       }
     },
     back: showTitle,

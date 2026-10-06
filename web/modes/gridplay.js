@@ -6,9 +6,15 @@
 // activate(id, el), snapshot()/restore(s), giveHint() → bool, stars(),
 // goal(), cellBox(i) → [x, y, w, h] in board units, and optionally
 // extraButtons(), initialFocus(), onRemove(el).
+//
+// opts.goal (optional) replaces the screen's own goal line, e.g. with a
+// story line when the story mode hosts the screen; opts.backdrop (a
+// 1600×900 SVG scene) is drawn behind it, opts.art lets a screen swap
+// pieces of its art (each screen lists the names it knows), and opts.text
+// gives the story's own words for some of its messages (see text()).
 
 import { icon } from '../art.js';
-import { t } from '../i18n.js';
+import { t, textOr } from '../i18n.js';
 import * as audio from '../audio.js';
 import { app, sleep, winOverlay } from '../shell.js';
 
@@ -23,6 +29,7 @@ export class BoardScreen {
     this.busy = false;
     this.done = false;
     this.history = [];
+    if (opts.goal) this.goal = () => opts.goal;
     this.setup();
     this.build();
     this.input.setScreen(this.root, {
@@ -42,7 +49,8 @@ export class BoardScreen {
 
   build() {
     this.root.innerHTML = `
-      <section class="play ${this.cls}" style="--n: ${this.n ?? 5}">
+      <section class="play ${this.cls}${this.opts.backdrop ? ' skinned' : ''}" style="--n: ${this.n ?? 5}">
+        ${this.opts.backdrop ? `<svg class="scene play-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${this.opts.backdrop}</svg>` : ''}
         <header class="play-head">
           <div class="play-label">${this.opts.label}</div>
           <div class="goal" role="status" aria-live="polite"></div>
@@ -85,6 +93,11 @@ export class BoardScreen {
       void this.goalEl.offsetWidth;
       this.goalEl.classList.add('bump');
     }
+  }
+
+  /** Message `key` from i18n, or the story's words for it in opts.text. */
+  text(key, vars) {
+    return textOr(this.opts.text, key, vars);
   }
 
   flash(el, cls = 'hint-flash') {
@@ -148,10 +161,12 @@ export class BoardScreen {
   async win() {
     if (this.done) return;
     this.done = true;
+    const stars = this.stars();
+    // Left (Kaart) during a finishing animation: it still counts as won.
+    if (this.destroyed) return this.opts.onWin?.(stars);
     this.say(t('wellDone'), 'good');
     audio.play('win');
     this.root.querySelector('.play').classList.add('won');
-    const stars = this.stars();
     await this.opts.onWin?.(stars);
     await sleep(1000);
     if (this.destroyed) return;

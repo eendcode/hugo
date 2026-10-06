@@ -1,5 +1,7 @@
 // De bibliotheek: slide the pieces of the portrait back into place.
 // The Rust core scrambles it and finds the next move of a shortest solution.
+// A story skin (ctx.art, see the saga's engines.js) may give its own
+// 300×300 picture, ctx.art.picture().
 
 import { t } from '../../i18n.js';
 import * as audio from '../../audio.js';
@@ -54,7 +56,7 @@ export class Slide {
       .join('');
     const squares = this.tiles.map((_, i) => `<rect class="square" data-nav="p-${i}" x="${(i % this.w) * 100}" y="${Math.floor(i / this.w) * 100}" width="100" height="100"/>`).join('');
     return `<svg class="slide board" viewBox="-12 -12 ${this.w * 100 + 24} ${this.h * 100 + 24}">
-      <defs><g id="slide-picture">${portrait()}</g></defs>
+      <defs><g id="slide-picture">${this.ctx.art?.picture?.() ?? portrait()}</g></defs>
       <rect x="-12" y="-12" width="${this.w * 100 + 24}" height="${this.h * 100 + 24}" rx="10" fill="#8a6420"/>
       <rect x="0" y="0" width="${this.w * 100}" height="${this.h * 100}" fill="#1b1330"/>
       <g class="pieces">${tiles}</g>

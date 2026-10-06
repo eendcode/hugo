@@ -1,6 +1,7 @@
 // Maak de weg vrij: tap a cart, then tap where it should slide to (it
 // only moves along its length). Get Barend's cart out through the gate.
 // Hints come from the Rust core (carts_hint).
+// opts.art (optional): cart(len, k, barends) and ground(size) replace the yard's art.
 
 import { t } from '../../i18n.js';
 import * as audio from '../../audio.js';
@@ -49,7 +50,7 @@ export class YardScreen extends BoardScreen {
       <rect x="${S}" y="${GATE_ROW * 100 + 6}" width="14" height="88" fill="#ffd35a" class="gate"/>
       <path d="M${S + 20} ${GATE_ROW * 100 + 50} h80 m-26 -22 l26 22 l-26 22" class="exit-arrow"/>
       <rect x="0" y="0" width="${S}" height="${S}" fill="#4a4a5e"/>
-      ${yardGround(this.size)}
+      ${(this.opts.art?.ground ?? yardGround)(this.size)}
       <g class="marks"></g>
       <g class="carts"></g>
       <g class="dots"></g>
@@ -69,7 +70,7 @@ export class YardScreen extends BoardScreen {
     this.counterEl = this.root.querySelector('.counter');
     this.cartsG.innerHTML = this.carts
       .map((c, k) => {
-        const art = cart(c.len, k, k === 0);
+        const art = (this.opts.art?.cart ?? cart)(c.len, k, k === 0);
         const body = c.horizontal ? art : `<g transform="translate(100 0) rotate(90)">${art}</g>`;
         return `<g class="cart ${k === 0 ? 'barends' : ''}" data-cart="${k}">${body}</g>`;
       })

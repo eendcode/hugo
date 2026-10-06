@@ -1,0 +1,1609 @@
+/* Het grote verhaal (story mode): the shared screens first, then one section
+   per book. Loaded after style.css (web/index.html), so these rules come after
+   the base rules, as before. */
+
+/* ========== Shared: story pages, the riddle card, Pim's bag, hosted puzzles, the bookshelf ========== */
+
+/* Story pages: large type, one sentence per line. */
+.saga-top {
+  position: absolute;
+  top: max(12px, 2.4vmin);
+  left: max(16px, 4vmin);
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.4vmin;
+  pointer-events: none;
+}
+
+.saga-top .page-dots {
+  position: static;
+}
+
+.saga-heading {
+  background: rgba(10, 14, 40, 0.78);
+  border: 3px solid var(--panel-edge);
+  border-radius: 999px;
+  padding: 0.25em 1em;
+  font-size: clamp(16px, 3.2vmin, 44px);
+  font-weight: 800;
+  color: #fff3c4;
+  text-align: center;
+}
+
+.saga-caption {
+  align-items: flex-end;
+  padding: 2.4vmin 3.4vmin;
+}
+
+.saga-lines {
+  flex: 1;
+  min-width: 0;
+}
+
+.saga-lines p,
+.riddle-lines p {
+  margin: 0;
+  /* No lone last word on a line ("zich."). */
+  text-wrap: balance;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: 0.01em;
+}
+
+.saga-lines p {
+  font-size: clamp(22px, 5.4vmin, 76px);
+}
+
+.saga-lines .say {
+  color: #ffe27a;
+}
+
+.saga-caption.no-lines {
+  background: none;
+  border-color: transparent;
+  justify-content: flex-end;
+}
+
+/* Hugo's letter: a torn scrap of paper. */
+.saga-letter {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  width: min(92vw, 1100px);
+  background: #f4ead2;
+  color: #4a2410;
+  padding: 4vmin 6vmin;
+  box-shadow: 0 1.4vmin 0 #0006;
+  clip-path: polygon(0 3%, 6% 0, 14% 2%, 30% 0, 46% 3%, 62% 0, 78% 2%, 92% 0, 100% 4%, 98% 30%, 100% 56%, 98% 80%, 100% 97%, 84% 100%, 66% 97%, 50% 100%, 32% 97%, 16% 100%, 2% 97%, 0 70%, 2% 44%, 0 20%);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, var(--font);
+}
+
+.saga-letter p {
+  margin: 0;
+  font-size: clamp(24px, 6.4vmin, 92px);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.saga-letter p:last-child {
+  text-align: right;
+  color: #8a2420;
+}
+
+/* The riddle card (Raadselkaart). */
+.saga-riddle {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.riddle-shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 25, 0.5);
+}
+
+.riddle-card {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4vmin);
+  transform: translate(-50%, -50%);
+  width: min(calc(100vw - 32px), 1280px);
+  max-height: calc(100% - 9rem);
+  overflow: auto;
+  background: #f4ead2;
+  background-image: radial-gradient(circle at 20% 10%, #fffaf0 0, transparent 50%), radial-gradient(circle at 90% 90%, #e8d6a8 0, transparent 60%);
+  color: #3a2410;
+  border: 6px solid #b8862a;
+  border-radius: 26px;
+  box-shadow: 0 1.4vmin 0 #0007;
+  padding: 2.4vmin 4vmin 3vmin;
+  text-align: center;
+}
+
+/* The riddle is the biggest text in the story mode. */
+.riddle-lines p {
+  font-size: clamp(22px, 6vmin, 86px);
+}
+
+.riddle-lines p:last-child {
+  color: #8a3f3f;
+  font-weight: 800;
+}
+
+.riddle-reply {
+  min-height: 1.4em;
+  margin: 0.6vmin 0 1.4vmin;
+  font-size: clamp(17px, 3.6vmin, 50px);
+  font-weight: 800;
+}
+
+.riddle-reply.warn {
+  color: #a8441a;
+}
+
+.riddle-reply.good {
+  color: #2f7a3a;
+}
+
+.riddle-reply.bump {
+  animation: bump 0.4s;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+  gap: 2.4vmin;
+  justify-items: center;
+  align-items: stretch;
+}
+
+.answer {
+  font: inherit;
+  position: relative;
+  width: 100%;
+  max-width: 24vmin;
+  background: #fffaf0;
+  border: 5px solid #c9a466;
+  border-radius: 22px;
+  color: #3a2410;
+  padding: 1vmin;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+}
+
+.answer svg {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.answer span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: clamp(14px, 2.8vmin, 40px);
+  font-weight: 800;
+  line-height: 1.1;
+  padding-bottom: 0.2em;
+}
+
+.answer.is-focused,
+.answer:active {
+  border-color: var(--lantern);
+  transform: scale(1.04);
+}
+
+.answer.wiggle {
+  animation: wiggle 0.4s;
+}
+
+.answer.tried {
+  background: #eee3c8;
+}
+
+.answer.crossed {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.answer.crossed::after {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  background:
+    linear-gradient(45deg, transparent 45%, #d8433a 45%, #d8433a 55%, transparent 55%),
+    linear-gradient(-45deg, transparent 45%, #d8433a 45%, #d8433a 55%, transparent 55%);
+}
+
+.answer.right {
+  border-color: #3f9f5a;
+  background: #e4f7dc;
+  animation: grow 0.6s both;
+  z-index: 1;
+}
+
+.answer.hint-flash {
+  animation: hint-flash 0.6s ease-in-out 4;
+}
+
+@keyframes grow {
+  60% { transform: scale(1.18); }
+  to { transform: scale(1.1); }
+}
+
+.flying-picture {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  filter: drop-shadow(0 0 16px #ffe27a);
+}
+
+.flying-picture svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Pim's bag (Tas), in the top bar of the book map and the riddle card. */
+.saga-bag {
+  display: flex;
+  align-items: center;
+  gap: 0.8vmin;
+  background: rgba(10, 14, 40, 0.8);
+  border: 3px solid var(--panel-edge);
+  border-radius: 16px;
+  padding: 2px 8px;
+  min-width: 0;
+}
+
+.saga-bag svg {
+  flex: none;
+  width: clamp(40px, 7vmin, 90px);
+  height: clamp(40px, 7vmin, 90px);
+}
+
+.bag-items {
+  display: flex;
+  gap: 0.6vmin;
+}
+
+.bag-items:empty {
+  display: none;
+}
+
+.bag-item {
+  background: #f4ead2;
+  border-radius: 14px;
+}
+
+.bag-item.new {
+  visibility: hidden;
+}
+
+.bag-item.used {
+  animation: hint-flash 0.8s ease-in-out 3;
+  box-shadow: 0 0 0 4px var(--lantern);
+}
+
+/* On a phone the bag is one icon with a count, and long captions are cut short. */
+.bag-count {
+  display: none;
+  min-width: 1.6em;
+  height: 1.6em;
+  border-radius: 0.8em;
+  background: var(--lantern);
+  color: #1b1330;
+  font-size: clamp(14px, 2.4vmin, 28px);
+  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+}
+
+.saga-bar .map-caption {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 700px), (max-aspect-ratio: 1/1) and (max-width: 900px) {
+  .saga-bar .bag-items {
+    display: none;
+  }
+
+  .saga-bar .bag-count:not(:empty) {
+    display: inline-flex;
+  }
+
+  .saga-bar .btn span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .saga-bar .map-caption {
+    visibility: hidden;
+  }
+}
+
+/* A hosted puzzle dressed as the story's scene (opts.backdrop). */
+.skinned {
+  isolation: isolate;
+}
+
+.play-backdrop {
+  z-index: -1;
+}
+
+.skinned .candles .plate {
+  fill: none;
+  stroke: none;
+}
+
+/* The bookshelf. */
+.shelf {
+  position: absolute;
+  top: calc(max(12px, 2vmin) + 80px);
+  bottom: max(16px, 3vmin);
+  left: max(16px, 3vmin);
+  right: max(16px, 3vmin);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: calc(var(--gap) * 1.6);
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.book-card {
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 4px solid transparent;
+  border-radius: 24px;
+  padding: 1vmin;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  gap: 0.6vmin;
+  cursor: pointer;
+  max-height: 100%;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.book-card svg {
+  width: 100%;
+  height: auto;
+  max-height: 56vh;
+}
+
+.book-title {
+  /* Two lines high, so one-line and two-line titles line up. */
+  min-height: 2.3em;
+  display: flex;
+  align-items: center;
+  font-size: clamp(15px, 2.8vmin, 40px);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.15;
+  text-shadow: 0 2px 0 #000a;
+}
+
+.book-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-size: clamp(14px, 2.4vmin, 34px);
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.book-note .icon {
+  width: 1.2em;
+  height: 1.2em;
+  fill: var(--lantern);
+  stroke: #b8862a;
+}
+
+.book-card.is-focused,
+.book-card.open:active {
+  border-color: var(--lantern);
+  transform: scale(1.03);
+}
+
+.book-card:not(.open) .cover-art {
+  filter: grayscale(0.7) brightness(0.55);
+}
+
+.cover-lock {
+  fill: none;
+  stroke: #fff3c4;
+  stroke-width: 2.4;
+}
+
+.book-card.wiggle {
+  animation: wiggle 0.4s;
+}
+
+@media (max-aspect-ratio: 1/1) {
+  /* Portrait: the whole picture above the text, like a page in a book. */
+  .saga-story {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3vmin;
+    padding: calc(max(12px, 2.4vmin) + 7vh) 16px 16px;
+  }
+
+  .saga-story .scene {
+    position: static;
+    flex: none;
+    height: auto;
+    /* A taller crop of the scene: the sides go, the middle stays. */
+    aspect-ratio: 4 / 3;
+    border-radius: 20px;
+  }
+
+  .saga-story .saga-caption {
+    position: static;
+    align-items: stretch;
+  }
+
+  .saga-lines p {
+    font-size: clamp(22px, 6.2vmin, 76px);
+  }
+
+  .shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .book-card svg {
+    max-height: 30vh;
+  }
+
+  .answers {
+    grid-template-columns: repeat(min(2, var(--count)), minmax(0, 1fr));
+  }
+
+  .answer {
+    max-width: 34vw;
+  }
+
+  /* An odd last card (five answers) sits in the middle of its row. */
+  .answer:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: 50%;
+  }
+
+  .riddle-lines p {
+    font-size: clamp(22px, 7vmin, 86px);
+  }
+
+  .riddle-card {
+    top: calc(50% + 2vmin);
+  }
+}
+
+/* Who asks the riddle (the Nachtbok in 4.5): a face in a purple ring at the card's corner. */
+.riddle-card.has-speaker {
+  border-color: #8f5fd0;
+  background-image: radial-gradient(circle at 20% 10%, #fffaf0 0, transparent 50%), radial-gradient(circle at 90% 90%, #e2d6f0 0, transparent 60%);
+  padding-left: calc(4vmin + clamp(70px, 14vmin, 190px));
+  min-height: calc(clamp(70px, 14vmin, 190px) + 4vmin);
+}
+
+.riddle-speaker {
+  position: absolute;
+  left: 2vmin;
+  top: 2vmin;
+  width: clamp(70px, 14vmin, 190px);
+  height: clamp(70px, 14vmin, 190px);
+  border-radius: 50%;
+  background: #2a1f4a;
+  border: 5px solid #8f5fd0;
+  box-shadow: 0 0 2.4vmin #b36bff88;
+}
+
+/* Answers on the riddle card under a speaker span the whole card. */
+.riddle-card.has-speaker .answers {
+  margin-left: calc(-1 * clamp(70px, 14vmin, 190px));
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .riddle-card.has-speaker {
+    padding-left: 4vmin;
+    padding-top: calc(2.4vmin + clamp(56px, 12vmin, 150px));
+  }
+
+  .riddle-speaker {
+    left: 50%;
+    top: 1.6vmin;
+    transform: translateX(-50%);
+    width: clamp(56px, 12vmin, 150px);
+    height: clamp(56px, 12vmin, 150px);
+  }
+
+  .riddle-card.has-speaker .answers {
+    margin-left: 0;
+  }
+}
+
+/* The bookshelf when every book is read: a rosette on each cover, a soft glow behind the shelf. */
+.cover-rosette {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bump 0.6s 0.3s both;
+}
+
+.saga-shelf.all-done .shelf::before {
+  content: '';
+  position: absolute;
+  inset: 10% 0 0;
+  background: radial-gradient(ellipse at 50% 60%, #ffe27a33, transparent 70%);
+  pointer-events: none;
+}
+
+/* A riddle shown again as solved (Back from the step after it). */
+.riddle-next {
+  margin: 2vmin auto 0;
+}
+
+/* ========== Book 1: De nacht van de bokkenrijders ========== */
+
+/* ---------- Planken (story mode, chapter 1.3): nail planks over the chapel door's gaps ----------
+   Self-contained block for web/modes/saga/planks.js. The puzzle fills the
+   RoomScreen's square stage: the door on one side, the plank tray beside it. */
+
+.planks {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  /* One square of a plank in the tray: planks.js sets it to the door's cell size. */
+  --pc: calc(var(--board) / 12);
+}
+
+.planks .pk-door {
+  flex: 0 1 auto;
+  height: 100%;
+  width: auto;
+  max-width: 64%;
+  overflow: visible;
+}
+
+/* Landscape: the stage grows sideways into the free space, so the tray
+   gets room next to a full-height door. (Without :has the stage stays square.) */
+@media (min-aspect-ratio: 1001/1000) {
+  .room-stage:has(> .planks) {
+    width: max(var(--board), min(calc(var(--board) * 1.5), calc(100vw - 320px)));
+  }
+}
+
+.pk-frame {
+  fill: #6f6a7a;
+  stroke: #4a4656;
+  stroke-width: 4;
+}
+
+.pk-stone-lines {
+  stroke: #4a4656;
+  stroke-width: 3;
+}
+
+.pk-boards {
+  fill: #7b4a26;
+}
+
+.pk-seams {
+  stroke: #4e2c14;
+  stroke-width: 4;
+}
+
+.pk-door-edge {
+  fill: none;
+  stroke: #3a200c;
+  stroke-width: 8;
+}
+
+.pk-strap {
+  fill: #3e3f4a;
+  stroke: #26262e;
+  stroke-width: 3;
+}
+
+.pk-rivet {
+  fill: #7d808e;
+}
+
+.pk-gaps rect {
+  fill: #0d0814;
+}
+
+.pk-gap-lines {
+  stroke: #3a2a40;
+  stroke-width: 3;
+  stroke-dasharray: 8 10;
+}
+
+.pk-rim {
+  fill: none;
+  stroke: #c48d55;
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pk-shadow {
+  fill: #000;
+  opacity: 0.4;
+}
+
+.pk-grain {
+  fill: none;
+  stroke: #7a4a22;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.45;
+}
+
+.pk-nail {
+  fill: #8d909c;
+  stroke: #3d3f4a;
+  stroke-width: 3;
+}
+
+.pk-nail-shine {
+  fill: #e4e7ef;
+}
+
+.pk-placed,
+.pk-ghost,
+.pk-fx {
+  pointer-events: none;
+}
+
+.pk-ghost {
+  opacity: 0.5;
+}
+
+.pk-wood {
+  fill: transparent;
+}
+
+.pk-hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 9;
+}
+
+.planks .cell.is-focused .pk-hit {
+  stroke: var(--focus);
+}
+
+/* With a plank picked, the gaps that are still open invite a tap. */
+.planks.has-plank .pk-gaps rect {
+  animation: pk-invite 1.4s ease-in-out infinite alternate;
+}
+
+/* A plank lands with a little bump, and the hammer swings twice: tik, tik. */
+.pk-plank.nailed .pk-land {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pk-land 0.45s ease-out;
+}
+
+.pk-hammer {
+  animation: pk-tik 0.44s ease-in;
+}
+
+.pk-door.shut .pk-placed {
+  filter: drop-shadow(0 0 10px #ffd35a);
+  transition: filter 0.6s;
+}
+
+.plank-tray {
+  flex: 0 1 auto;
+  max-height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: var(--gap);
+  padding: var(--gap);
+  background: rgba(10, 14, 40, 0.5);
+  border: 3px dashed #3d4c8a;
+  border-radius: 20px;
+  overflow: auto;
+}
+
+.plank-tray.nudge {
+  animation: nudge 0.5s;
+}
+
+.plank-piece {
+  position: relative;
+  width: calc(var(--pc) * (var(--w) + 0.12) + 14px);
+  height: calc(var(--pc) * (var(--h) + 0.14) + 14px);
+  padding: 4px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.plank-piece.selected {
+  border-color: var(--lantern);
+  background: #ffd35a22;
+}
+
+/* "Tap again to turn it." */
+.pk-turn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lantern);
+  color: #1b1330;
+  border: 3px solid #fff3b0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 29px;
+  text-align: center;
+  pointer-events: none;
+}
+
+@keyframes pk-invite {
+  to { fill: #2a1a3a; }
+}
+
+@keyframes pk-land {
+  0% { transform: scale(1.12); }
+  60% { transform: scale(0.97); }
+}
+
+@keyframes pk-tik {
+  0% { transform: rotate(28deg); }
+  25% { transform: rotate(0deg); }
+  60% { transform: rotate(30deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Portrait: the door on top, the tray in a row below it. */
+@media (max-aspect-ratio: 1/1) {
+  .planks {
+    --pc: calc(var(--board) / 13);
+  }
+
+  .room-stage:has(> .planks) {
+    width: 100%;
+    height: auto;
+  }
+
+  .room-stage:has(> .planks) > .planks {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .room-stage:has(> .planks) .pk-door {
+    height: min(40vh, calc(var(--board) * 1.15));
+    max-width: 100%;
+  }
+
+  .room-stage:has(> .planks) .plank-tray {
+    flex: none;
+    width: 100%;
+    min-height: calc(var(--pc) * 2 + 3 * var(--gap));
+  }
+}
+
+/* ========== Book 2: Red Barend! ========== */
+
+/* ---------- Slot (story mode, chapter 2.1): count, turn the wheels, open ----------
+   Self-contained block for web/modes/saga/lock.js. The picture to count in
+   on one side, the padlock with its three wheels and Open on the other. The
+   stage is a size container: the wheels scale with it and the picture takes
+   the rest (lock.js sets --ratio from the picture's viewBox). */
+
+.room-stage:has(> .saga-lock) {
+  container-type: size;
+}
+
+.saga-lock {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--gap) * 1.5);
+  /* One wheel's width (the padlock is about 4 of them wide, with Open). */
+  --wheel: clamp(46px, min(9.5cqw, 21cqh), 150px);
+}
+
+.lk-picture {
+  flex: none;
+  width: min(calc(100cqw - 3.9 * var(--wheel) - 4 * var(--gap) - 60px), calc(100cqh * var(--ratio)));
+  height: auto;
+  aspect-ratio: var(--ratio);
+  border-radius: 24px;
+  border: 4px solid #3d4c8a;
+  background: linear-gradient(var(--sky-top), var(--sky-bottom));
+}
+
+.lk-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--gap) * 1.2);
+}
+
+.lk-body {
+  position: relative;
+  margin-top: calc(var(--wheel) * 0.6);
+  padding: calc(var(--wheel) * 0.1);
+  background: linear-gradient(#6a6e80, #44475a);
+  border: 6px solid #26262e;
+  border-radius: calc(var(--wheel) * 0.22);
+  box-shadow: 0 8px 0 #0008;
+}
+
+.lk-shackle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 6px);
+  width: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.5s cubic-bezier(0.3, 1.6, 0.6, 1);
+  z-index: -1;
+}
+
+.saga-lock.opening .lk-shackle {
+  transform: translate(-50%, -30%);
+}
+
+.lk-wheels {
+  display: flex;
+  gap: calc(var(--wheel) * 0.1);
+}
+
+.lk-wheel {
+  position: relative;
+  width: var(--wheel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--wheel) * 0.04);
+  padding: calc(var(--wheel) * 0.06) 0 calc(var(--wheel) * 0.08);
+  font: inherit;
+  color: #1b1330;
+  background: #2a2c36;
+  border: 4px solid #8d909c;
+  border-radius: calc(var(--wheel) * 0.15);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.lk-wheel:active {
+  transform: scale(0.96);
+}
+
+.lk-icon {
+  width: 62%;
+  aspect-ratio: 1;
+}
+
+.lk-window {
+  display: block;
+  width: 84%;
+  overflow: hidden;
+  text-align: center;
+  font-size: calc(var(--wheel) * 0.58);
+  font-weight: 800;
+  line-height: 1.12;
+  background: linear-gradient(#d8d2c0, #fffaf0 30%, #fffaf0 70%, #d8d2c0);
+  border: 3px solid #1b1330;
+  border-radius: calc(var(--wheel) * 0.12);
+}
+
+.lk-num {
+  display: inline-block;
+}
+
+.lk-num.roll {
+  animation: lk-roll 0.28s ease-out;
+}
+
+.lk-num.roll-back {
+  animation: lk-roll-back 0.28s ease-out;
+}
+
+.lk-dots {
+  width: 48%;
+  aspect-ratio: 1;
+  fill: #ffe27a;
+}
+
+/* "Tap to turn": a small badge on the wheel's corner. */
+.lk-turn {
+  position: absolute;
+  top: calc(var(--wheel) * -0.08);
+  right: calc(var(--wheel) * -0.08);
+  width: max(20px, calc(var(--wheel) * 0.22));
+  height: max(20px, calc(var(--wheel) * 0.22));
+  border-radius: 50%;
+  background: var(--lantern);
+  border: 2px solid #fff3b0;
+  font-size: max(14px, calc(var(--wheel) * 0.15));
+  font-weight: 800;
+  line-height: max(16px, calc(var(--wheel) * 0.19));
+  text-align: center;
+  pointer-events: none;
+}
+
+.saga-lock.open .lk-wheel {
+  border-color: var(--good);
+}
+
+/* Open: a tall button on the padlock, after the wheels. */
+.lk-open {
+  width: calc(var(--wheel) * 0.82);
+  min-width: 0;
+  min-height: 0;
+  padding: 4px 2px;
+  flex-direction: column;
+  gap: 0.2em;
+  font-size: max(12px, calc(var(--wheel) * 0.2));
+  border-radius: calc(var(--wheel) * 0.15);
+}
+
+.lk-open .icon {
+  width: 62%;
+  height: auto;
+  aspect-ratio: 1;
+  stroke: currentColor;
+}
+
+/* A hint counts the things out loud: they glow, and a number pops up on each. */
+.lk-counted {
+  filter: drop-shadow(0 0 14px #fff3b0) brightness(1.3);
+}
+
+.lk-badge circle {
+  fill: #d8433a;
+  stroke: #fffaf0;
+  stroke-width: 6;
+}
+
+.lk-badge text {
+  font: 800 38px var(--font);
+  fill: #fff;
+  text-anchor: middle;
+}
+
+.lk-badge {
+  animation: lk-pop 0.3s ease-out;
+}
+
+/* The gate in the lock's picture swings open when the lock opens. */
+.lk-picture .gate-leaf {
+  transform-box: fill-box;
+  transition: transform 0.9s ease-in-out;
+}
+
+.lk-picture .gate-left {
+  transform-origin: left center;
+}
+
+.lk-picture .gate-right {
+  transform-origin: right center;
+}
+
+.saga-lock.open .lk-picture .gate-leaf {
+  transform: scaleX(0.26);
+}
+
+@keyframes lk-roll {
+  from { transform: translateY(70%); opacity: 0.2; }
+}
+
+@keyframes lk-roll-back {
+  from { transform: translateY(-70%); opacity: 0.2; }
+}
+
+@keyframes lk-pop {
+  from { transform: scale(0.2); }
+}
+
+@media (min-aspect-ratio: 1001/1000) {
+  .room-stage:has(> .saga-lock) {
+    width: max(var(--board), min(calc(var(--board) * 2.1), calc(100vw - 300px)));
+  }
+}
+
+/* A very short stage (a phone on its side): no room for the turn badges. */
+@container (max-height: 320px) {
+  .lk-turn {
+    display: none;
+  }
+}
+
+/* Portrait: the picture on top, the lock below it; both sized to fit the height. */
+@media (max-aspect-ratio: 1/1) {
+  .room-stage:has(> .saga-lock) {
+    width: 100%;
+    height: auto;
+    container-type: inline-size;
+  }
+
+  .room-stage:has(> .saga-lock) > .saga-lock {
+    flex-direction: column;
+    height: auto;
+    gap: var(--gap);
+    --wheel: min(19cqw, 11vh, 150px);
+  }
+
+  .room-stage:has(> .saga-lock) .lk-picture {
+    width: min(100%, calc(40vh * var(--ratio)));
+  }
+}
+
+/* ---------- Book 2's skins (web/modes/saga/art2.js) ---------- */
+
+/* The cellar: the water lights up and the raft floats over to Pim. */
+.ce-water {
+  fill: #1d3a5a;
+  stroke: #120d22;
+  stroke-width: 6;
+  transition: fill 0.8s;
+}
+
+.ce-waves {
+  opacity: 0.4;
+}
+
+.room.won .ce-water {
+  fill: #2f7fc0;
+}
+
+.room.won .ce-waves {
+  opacity: 0.9;
+  animation: ce-wave 1s ease-in-out infinite alternate;
+}
+
+.ce-raft-go {
+  transition: transform 0.9s ease-in-out 0.35s;
+}
+
+.room.won .ce-raft-go {
+  transform: translateX(var(--go));
+}
+
+.skinned.room-kelder .pipes .plate {
+  fill: #3a3546;
+  stroke: #5a5270;
+}
+
+@keyframes ce-wave {
+  to { transform: translateX(-20px); }
+}
+
+/* The garden: the chess board's squares are water and grass of their own. */
+.skinned.chess .gc-water {
+  stroke: #142a44;
+  stroke-width: 2;
+}
+
+/* The chess garden: bright move markers on water and grass (a five-year-old's main cue),
+   and the move counter on a dark pill so it reads over the lit house. */
+.skinned.chess .dot {
+  fill: #fff3b0;
+  opacity: 0.85;
+  stroke: #1b1330;
+  stroke-width: 3;
+}
+
+.skinned.chess .dot.take {
+  fill: none;
+  stroke: #ffe27a;
+  stroke-width: 9;
+  opacity: 0.95;
+}
+
+.skinned .counter {
+  align-self: center;
+  padding: 0.1em 0.6em;
+  border-radius: 999px;
+  background: rgba(10, 14, 40, 0.8);
+  border: 3px solid #3d4c8a;
+}
+
+/* The cellar's spout pours into the pool once the water flows. */
+.ce-stream {
+  fill: #6fc8ff;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 0.5s ease-in, opacity 0.2s;
+}
+
+.ce-splash {
+  fill: #cfeeff;
+  opacity: 0;
+  transition: opacity 0.4s 0.4s;
+}
+
+.room.won .ce-stream {
+  opacity: 0.9;
+  transform: none;
+}
+
+.room.won .ce-splash {
+  opacity: 0.7;
+}
+
+/* ========== Book 3: Wie heeft het klokje gestolen? ========== */
+
+/* ---------- Wat is er anders? (story mode, chapter 3.1): two pictures, tap the differences ----------
+   Self-contained block for web/modes/saga/spot.js. Yesterday and today side by
+   side (on a portrait screen, above each other), a row of dots below. The
+   stage is a size container: each picture takes half of it, keeping its ratio. */
+
+.room-stage:has(> .saga-spot) {
+  container-type: size;
+}
+
+.saga-spot {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  --label: clamp(18px, 3.4vmin, 44px);
+}
+
+.sp-pics {
+  display: flex;
+  gap: calc(var(--gap) * 1.5);
+  justify-content: center;
+}
+
+.sp-pic {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.sp-pic figcaption {
+  font-size: var(--label);
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.15em 0.8em;
+  border-radius: 999px;
+  background: rgba(10, 14, 40, 0.75);
+  border: 3px solid #3d4c8a;
+}
+
+.sp-today figcaption {
+  color: #fff3c4;
+  border-color: var(--lantern);
+}
+
+.sp-pic svg {
+  /* Half the stage wide, and short enough to leave room for the labels and dots. */
+  width: min(calc(50cqw - var(--gap) * 0.75 - 8px), calc((100cqh - var(--label) * 2.8 - 40px) * var(--ratio)));
+  height: auto;
+  aspect-ratio: var(--ratio);
+  border-radius: 20px;
+  border: 5px solid #fffaf0;
+  box-shadow: 0 8px 0 #0006;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sp-pic.wiggle {
+  animation: wiggle 0.4s;
+}
+
+.sp-cell {
+  fill: none;
+  stroke: none;
+  pointer-events: none;
+}
+
+.kbd .sp-cell.is-focused {
+  stroke: var(--focus);
+  stroke-width: 10;
+  stroke-dasharray: 24 12;
+}
+
+.sp-ring {
+  fill: none;
+  stroke: #e0474c;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: sp-draw 0.6s ease-out both;
+  filter: drop-shadow(0 0 4px #fff);
+}
+
+.sp-flash {
+  fill: #fffbe0;
+  opacity: 0;
+  animation: sp-flash 0.7s ease-out;
+}
+
+.sp-hint {
+  fill: #9fe8ff;
+  fill-opacity: 0.25;
+  stroke: #9fe8ff;
+  stroke-width: 8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sp-pulse 0.65s ease-in-out 4;
+  pointer-events: none;
+}
+
+.sp-marks {
+  pointer-events: none;
+}
+
+.sp-count {
+  display: flex;
+  gap: 1.4vmin;
+}
+
+.sp-count span {
+  width: 3vmin;
+  height: 3vmin;
+  min-width: 16px;
+  min-height: 16px;
+  border-radius: 50%;
+  background: #fff3;
+  border: 3px solid #fff6;
+}
+
+.sp-count span.on {
+  background: #e0474c;
+  border-color: #fffaf0;
+  animation: pop 0.4s;
+}
+
+@keyframes sp-draw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes sp-flash {
+  30% { opacity: 0.7; }
+}
+
+@keyframes sp-pulse {
+  50% { transform: scale(1.15); stroke-width: 12; }
+}
+
+@media (min-aspect-ratio: 1001/1000) {
+  /* Landscape: the two pictures take the whole width, the buttons sit in a row below them. */
+  .play.room-spot {
+    grid-template-areas:
+      'head'
+      'board'
+      'side';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .room-spot .room-stage {
+    width: 100%;
+    height: 100%;
+  }
+
+  .room-spot .side {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .room-spot .buttons {
+    grid-template-columns: repeat(3, minmax(120px, auto));
+  }
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .room-stage:has(> .saga-spot) {
+    width: 100%;
+    height: auto;
+    container-type: inline-size;
+  }
+
+  .room-stage:has(> .saga-spot) .sp-pics {
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  .room-stage:has(> .saga-spot) .sp-pic {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .room-stage:has(> .saga-spot) .sp-pic figcaption {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    padding: 0.8em 0.15em;
+  }
+
+  .room-stage:has(> .saga-spot) .sp-pic svg {
+    width: min(calc(100cqw - var(--label) - 24px), calc(33vh * var(--ratio)));
+  }
+}
+
+/* ---------- Book 3's suspect board step (web/modes/saga/suspects.js) ----------
+   The riddle card's parchment with six suspect cards that turn over (3D flip). */
+
+.suspects {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 2vmin;
+  justify-items: center;
+  perspective: 1200px;
+}
+
+.suspect {
+  font: inherit;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 22vmin;
+  aspect-ratio: 5 / 6;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #3a2410;
+}
+
+.sus-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.suspect.turned .sus-flip {
+  transform: rotateY(180deg);
+}
+
+/* Cards that were already turned before this step don't animate. */
+.suspect.turned:not(.flipping) .sus-flip {
+  transition: none;
+}
+
+.sus-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  border: 5px solid #c9a466;
+  background: #fffaf0;
+  padding: 0.6vmin;
+}
+
+.sus-face svg {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.sus-front span {
+  font-size: clamp(14px, 2.8vmin, 40px);
+  font-weight: 800;
+  line-height: 1.15;
+  padding-bottom: 0.15em;
+}
+
+.sus-back {
+  transform: rotateY(180deg);
+  background: #c9d6ea;
+  border-color: #5a6f96;
+}
+
+.suspect.is-focused .sus-front,
+.suspect:active .sus-front {
+  border-color: var(--lantern);
+  box-shadow: 0 0 0 4px var(--lantern);
+}
+
+.suspect.wiggle {
+  animation: wiggle 0.4s;
+}
+
+.suspect.hint-flash {
+  animation: hint-flash 0.6s ease-in-out 4;
+}
+
+.suspect.flipping {
+  animation: sus-lift 0.7s ease-out;
+}
+
+.sus-next {
+  margin-top: 2vmin;
+}
+
+@keyframes sus-lift {
+  40% { transform: translateY(-3vmin) scale(1.08); }
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .suspects {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .suspect {
+    max-width: 26vw;
+  }
+}
+
+/* ---------- Book 3's skins (web/modes/saga/art3.js, skins3.js) ---------- */
+
+/* The owl's sums: wooden signs in the woods. */
+.skinned.room-rekenkamer .tile {
+  background: #7a5230;
+  border-color: #c9945a;
+}
+
+.skinned.room-rekenkamer .tile.ask {
+  border-color: var(--lantern);
+}
+
+/* Hugo's buttons: the cards lie on a red cloth, face down they show a little magpie mark. */
+.skinned.room-zaal .card {
+  background: #7a2a34;
+  border-color: #e8b84a;
+}
+
+.skinned.room-zaal .card .back rect {
+  fill: #9a3440;
+}
+
+.skinned.room-zaal .card .back text {
+  fill: #f2c4a0;
+}
+
+.skinned.room-zaal .card.open {
+  background: #f4ead2;
+}
+
+/* The last picture: the black stone in the nest starts to glow. */
+.stone-glow {
+  animation: stone-glow 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes stone-glow {
+  from { opacity: 0.1; }
+  to { opacity: 0.6; }
+}
+
+/* ========== Book 4: De Nachtbok ========== */
+
+/* The Nachtbok-meter step (web/modes/saga/meter.js).
+   The meter is the riddle card's parchment with the meter panel on it; the
+   old size puffs away and the new one pops up (timed with SHRINK_MS). */
+.meter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4vmin;
+  width: min(calc(100vw - 32px), 1100px);
+}
+
+.meter-svg {
+  width: min(100%, 64vmin);
+  height: auto;
+  overflow: visible;
+}
+
+.meter-svg .mt-old,
+.meter-svg .mt-new,
+.meter-svg .mt-puff {
+  transform-box: fill-box;
+}
+
+.saga-meter.shrinks .mt-old {
+  transform-origin: 50% 100%;
+  animation: meter-out 0.9s ease-in both;
+}
+
+.saga-meter.shrinks .mt-new {
+  transform-origin: 50% 100%;
+  animation: meter-in 0.7s cubic-bezier(0.3, 1.6, 0.6, 1) 0.9s both;
+}
+
+.saga-meter .mt-puff {
+  transform-origin: center;
+  opacity: 0;
+  animation: meter-puff 0.8s ease-out 0.7s both;
+}
+
+.mt-next {
+  animation: bump 0.4s 1.5s both;
+}
+
+@keyframes meter-out {
+  60% { transform: scale(0.85, 0.75); opacity: 1; }
+  to { transform: scale(0.3); opacity: 0; }
+}
+
+@keyframes meter-in {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes meter-puff {
+  0% { opacity: 0.9; transform: translate(0, 0) scale(0.4); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.3); }
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .meter-svg {
+    width: 100%;
+  }
+}
+
+/* ---------- Book 4's skins (web/modes/saga/art4.js, skins4.js) ---------- */
+
+/* The lightning on its loop: a yellow dashed path, no footprints. */
+.play:has(.sky-lightning) .footprints {
+  display: none;
+}
+
+.play:has(.sky-lightning) .patrol-path {
+  stroke: #fff3a0;
+  opacity: 0.55;
+}
+
+.play:has(.sky-lightning) .patrol-dot {
+  fill: #fff3a0;
+}
+
+.sky-lightning .flash,
+.bolt {
+  animation: flicker 2.3s steps(1) infinite;
+}
+
+body[data-scare='zacht'] .bolt {
+  animation: none;
+  opacity: 0.6;
+}
+
+.nachtbok .crackle {
+  animation: flicker 1.7s steps(1) infinite;
+}
+
+/* The bokje shivers a little ("Het rilt"). */
+.shiver {
+  animation: shiver 0.25s linear infinite alternate;
+}
+
+@keyframes shiver {
+  from { transform: translateX(-3px); }
+  to { transform: translateX(3px); }
+}

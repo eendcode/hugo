@@ -372,7 +372,7 @@ body.kbd .stop.is-focused .ring,
   left: max(16px, 3vmin);
   right: max(16px, 3vmin);
   display: grid;
-  grid-template-columns: repeat(min(3, var(--count)), minmax(0, 1fr));
+  grid-template-columns: repeat(min(4, var(--count)), minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
   gap: calc(var(--gap) * 1.5);
   align-content: center;
@@ -437,7 +437,7 @@ body.kbd .stop.is-focused .ring,
 @media (max-aspect-ratio: 1/1) {
   .mode-grid {
     grid-template-columns: repeat(min(2, var(--count)), minmax(0, 1fr));
-    grid-auto-rows: min(28vh, calc((100% - 2 * var(--gap)) / 3));
+    grid-auto-rows: min(28vh, calc((100% - 4.5 * var(--gap)) / 4));
   }
   .mode-card {
     max-height: none;
@@ -838,6 +838,7 @@ path.ring {
   fill: #b0875a;
 }
 
+.chess .taken-marks,
 .chess .marks,
 .chess .pieces,
 .chess .dots,
@@ -1861,6 +1862,12 @@ g.wiggle {
 
   .caption-buttons {
     justify-content: flex-end;
+    /* A story page with an extra button (e.g. "Naar het spookhuis") wraps instead of squeezing. */
+    flex-wrap: wrap;
+  }
+
+  .caption-buttons [data-nav='goto'] {
+    order: 1;
   }
 }
 

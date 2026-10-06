@@ -1,0 +1,300 @@
+{
+  "book": 1,
+  "title": "De nacht van de bokkenrijders",
+  "intro": [
+    {
+      "scene": "treasures",
+      "lines": ["De schatten staan weer in de kapel.", "Maar kijk!", "Daar ligt een brief."]
+    },
+    {
+      "scene": "letter",
+      "letter": ["Om twaalf uur kom ik terug.", "Dan pak ik de schat.", "– Hugo"]
+    },
+    {
+      "scene": "clock",
+      "lines": ["Pim kijkt naar de klok.", "Het is zes uur.", "„Kom, Barend. We maken de kapel dicht!”"]
+    }
+  ],
+  "chapters": [
+    {
+      "title": "De klok in de toren",
+      "hour": 7,
+      "scene": "asleep",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "asleep",
+              "lines": ["Het dorp slaapt al.", "Pim moet iedereen wakker maken."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": [
+              "Ik hang hoog in de toren.",
+              "Ik heb geen mond.",
+              "Toch roep ik heel hard: bim bam!",
+              "Wat ben ik?"
+            ],
+            "answers": [
+              {"picture": "klok", "word": "klok", "right": true},
+              {"picture": "vogel", "word": "vogel", "reply": "Nee, een vogel zegt tjilp!"},
+              {"picture": "lamp", "word": "lamp", "reply": "Nee, een lamp roept niet bim bam!"},
+              {"picture": "vlag", "word": "vlag", "reply": "Nee, een vlag wappert alleen."}
+            ]
+          }
+        },
+        {
+          "puzzle": {"engine": "bells", "level": 1, "seed": 1101, "goal": "Speel het alarm na!", "skin": "tower"}
+        },
+        {
+          "story": [
+            {
+              "scene": "awake",
+              "sound": "chapel",
+              "lines": ["Overal gaat het licht aan.", "Het dorp helpt mee!"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De kar met planken",
+      "hour": 8,
+      "scene": "barn",
+      "items": ["planken"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "barn",
+              "lines": ["Boer Teun heeft planken.", "Maar zijn kar zit klem in de schuur."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben van hout.", "Ik ben lang en plat.", "Je timmert mij op een deur.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "plank", "word": "plank", "right": true, "item": "planken"},
+              {"picture": "appel", "word": "appel", "reply": "Nee, een appel kun je eten!"},
+              {"picture": "bal", "word": "bal", "reply": "Nee, een bal is rond!"},
+              {"picture": "vis", "word": "vis", "reply": "Nee, een vis zwemt in de zee!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "carts",
+            "from": "wegvrij/stage-1.json, level 10",
+            "goal": "Rijd de kar met planken naar buiten!", "skin": "barn",
+            "data": {"size": 6, "carts": [{"x": 0, "y": 2, "len": 2, "horizontal": true}, {"x": 5, "y": 2, "len": 3, "horizontal": false}, {"x": 5, "y": 0, "len": 2, "horizontal": false}, {"x": 3, "y": 1, "len": 2, "horizontal": false}, {"x": 1, "y": 4, "len": 2, "horizontal": true}], "par": 3, "seed": 2872687768, "difficulty": 0, "score": 35}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "cart",
+              "lines": ["De kar met planken staat bij de kapel.", "Pim heeft de planken!"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Timmer de deur dicht",
+      "hour": 9,
+      "scene": "holes",
+      "items": ["hamer"],
+      "uses": ["planken"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "holes",
+              "lines": ["De deur van de kapel heeft gaten.", "Pim heeft planken.", "Maar wat nog meer?"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": [
+              "Ik heb een kop, maar geen ogen.",
+              "Ik heb een steel, maar ik ben geen bloem.",
+              "Ik zeg: tik, tik, tik!",
+              "Wat ben ik?"
+            ],
+            "answers": [
+              {"picture": "hamer", "word": "hamer", "right": true},
+              {"picture": "bloem", "word": "bloem", "reply": "Nee, een bloem zegt niet tik!"},
+              {"picture": "pop", "word": "pop", "reply": "Nee, een pop heeft wel ogen!"},
+              {"picture": "schep", "word": "schep", "reply": "Nee, met een schep graaf je!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {"engine": "planks", "door": 1, "goal": "Timmer alle gaten dicht!"}
+        },
+        {
+          "story": [
+            {
+              "scene": "door",
+              "lines": ["Tik, tik, tik!", "De deur is dicht."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Een vals spoor",
+      "hour": 10,
+      "scene": "goats",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "goats",
+              "lines": ["Hugo stuurt eerst zijn geiten vooruit.", "Ze volgen elk spoor.", "Barend heeft een slim plan."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben nat en bruin.", "Stap je in mij?", "Dan zak je weg.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "modder", "word": "modder", "right": true},
+              {"picture": "steen", "word": "steen", "reply": "Nee, een steen is hard!"},
+              {"picture": "brug", "word": "brug", "reply": "Nee, over een brug loop je droog!"},
+              {"picture": "gras", "word": "gras", "reply": "Nee, gras is groen!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "program",
+            "from": "programma/stage-2.json, level 1",
+            "goal": "Eet de appel. Loop naar de modder!",
+            "skin": "mud",
+            "data": {"width": 5, "height": 5, "cells": ["Grass", "Grass", "Grass", "Grass", "Grass", "Grass", "Grass", "Apple", "Grass", "Grass", "Tree", "Grass", "Grass", "Stable", "Grass", "Grass", "Grass", "Grass", "Grass", "Grass", "Tree", "Grass", "Grass", "Grass", "Grass"], "start": 9, "facing": "S", "relative": false, "slots": 5, "best": 3, "seed": 4020741334, "difficulty": 1, "score": 36}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "mud",
+              "lines": ["Plof!", "De geiten zakken in de modder.", "Mopperend gaan ze terug."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Licht op de duinen",
+      "hour": 11,
+      "scene": "dark",
+      "items": ["spiegel"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "dark",
+              "lines": ["Het is pikdonker op de duinen.", "Zo ziet de wacht de rovers niet."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Kijk in mij.", "Wie zie je dan?", "Jij!", "Wat ben ik?"],
+            "answers": [
+              {"picture": "spiegel", "word": "spiegel", "right": true},
+              {"picture": "raam", "word": "raam", "reply": "Nee, door een raam kijk je naar buiten!"},
+              {"picture": "deur", "word": "deur", "reply": "Nee, een deur gaat open en dicht!"},
+              {"picture": "bord", "word": "bord", "reply": "Nee, van een bord eet je!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "lantern",
+            "from": "lantaarn/stage-2.json, level 1",
+            "goal": "Stuur het licht naar het vuur!", "skin": "dunes",
+            "data": {"width": 5, "height": 5, "cells": ["Empty", "Wall", "Empty", "Empty", "Empty", "Lantern", "Empty", "Wall", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Wall", "Empty", "Empty", "Stone", "Wall", "Empty"], "lantern": 5, "facing": 1, "mirrors": 2, "solution": [[6, "Backslash"], [21, "Backslash"]], "seed": 2313443964, "difficulty": 1, "score": 28}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "beacons",
+              "lines": ["Daar!", "De wacht ziet de rovers komen."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Twaalf uur",
+      "hour": 12,
+      "scene": "flying",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "midnight",
+              "sound": "chapel",
+              "lines": ["Bim bam!", "Het is twaalf uur.", "De rovers kunnen niet door de deur."]
+            },
+            {
+              "scene": "flying",
+              "lines": ["Dan vliegen ze op hun geiten naar de toren!"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben wit en zacht.", "Ik zweef in de mist.", "Ik pas op de kapel.", "Wie ben ik?"],
+            "answers": [
+              {"picture": "witteDame", "word": "de Witte Dame", "right": true},
+              {"picture": "hugo", "word": "Hugo", "reply": "Nee! Hugo wil de schat pakken!"},
+              {"picture": "wolk", "word": "wolk", "reply": "Bijna! Maar een wolk kan niet oppassen."},
+              {"picture": "schaap", "word": "schaap", "reply": "Nee, een schaap zegt bèè!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {"engine": "candles", "level": 2, "seed": 1106, "goal": "Maak alle ramen licht!", "skin": "chapel"}
+        },
+        {
+          "story": [
+            {
+              "scene": "dame",
+              "lines": ["De kapel straalt.", "Daar is de Witte Dame.", "„Boe!” zegt ze zacht."]
+            },
+            {
+              "scene": "flee",
+              "lines": ["De rovers schrikken.", "Ze vliegen hard weg."]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finale": [
+    {
+      "scene": "party",
+      "lines": ["Het dorp juicht.", "De schat is veilig!"]
+    },
+    {
+      "scene": "heath",
+      "lines": ["Maar ver weg op de hei moppert Hugo.", "„Die slimme geit… Die wil ik hebben!”"]
+    },
+    {
+      "scene": "stable",
+      "lines": ["De volgende ochtend is de stal leeg.", "Barend is weg!"]
+    },
+    {
+      "scene": "feather",
+      "lines": ["Er ligt alleen een rode veer.", "Van de hoed van Hugo."]
+    }
+  ]
+}

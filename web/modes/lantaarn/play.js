@@ -1,6 +1,12 @@
 // Lantaarnlicht: tap an empty square to put a mirror there; tap again to
 // turn it; once more to take it back. The beam is redrawn after every
 // change and the moonstones it touches light up.
+// opts.art.stone(lit, k, n) (optional) draws something else for the
+// moonstones: k is the stone's place (0 … n−1) along the intended beam, so
+// a story can make the last one special. opts.art.wall(k) (optional) draws
+// the k-th wall (in reading order), and opts.art.ground(empty) (optional)
+// a cell's ground (`empty`: a square where a mirror can go), and
+// opts.art.lantern(facing) (optional) the lantern itself.
 
 import { t } from '../../i18n.js';
 import * as audio from '../../audio.js';
@@ -18,6 +24,10 @@ export class LanternScreen extends BoardScreen {
     this.h = f.height;
     this.n = Math.max(f.width, f.height);
     this.placed = new Map(); // cell → 'Slash' | 'Backslash'
+    // Each stone's place along the intended beam (for a skin's stone art).
+    const want = JSON.parse(this.core.lantern_trace(JSON.stringify(f), JSON.stringify(f.solution)));
+    this.stoneOrder = new Map(want.lit.map((cell, k) => [cell, k]));
+    this.walls = f.cells.flatMap((c, i) => (c === 'Wall' ? [i] : []));
   }
 
   goal() {
@@ -56,9 +66,8 @@ export class LanternScreen extends BoardScreen {
       .map((c, i) => {
         const [x, y] = this.cellBox(i);
         const nav = c === 'Empty' ? ` data-nav="c${i}" data-longpress` : '';
-        return `<g class="cell cell-${typeof c === 'string' ? c.toLowerCase() : 'fixed'}"${nav} transform="translate(${x} ${y})">
-          <rect x="3" y="3" width="94" height="94" rx="10" class="ground"/>
-        </g>`;
+        const ground = this.opts.art?.ground?.(c === 'Empty') ?? '<rect x="3" y="3" width="94" height="94" rx="10" class="ground"/>';
+        return `<g class="cell cell-${typeof c === 'string' ? c.toLowerCase() : 'fixed'}"${nav} transform="translate(${x} ${y})">${ground}</g>`;
       })
       .join('');
   }
@@ -72,13 +81,14 @@ export class LanternScreen extends BoardScreen {
     const beam = JSON.parse(this.core.lantern_trace(JSON.stringify(f), JSON.stringify([...this.placed])));
     this.beam = beam;
     const lit = new Set(beam.lit);
+    const art = { stone, wall, lantern, ...this.opts.art };
     this.itemsG.innerHTML = f.cells
       .map((c, i) => {
         const [x, y] = this.cellBox(i);
         let inner = '';
-        if (c === 'Lantern') inner = lantern(f.facing);
-        else if (c === 'Wall') inner = wall();
-        else if (c === 'Stone') inner = stone(lit.has(i));
+        if (c === 'Lantern') inner = art.lantern(f.facing);
+        else if (c === 'Wall') inner = art.wall(this.walls.indexOf(i));
+        else if (c === 'Stone') inner = art.stone(lit.has(i), this.stoneOrder.get(i) ?? 0, this.stoneOrder.size);
         else if (c.Fixed) inner = mirror(c.Fixed, true);
         else if (this.placed.has(i)) inner = mirror(this.placed.get(i));
         return inner ? `<g transform="translate(${x} ${y})">${inner}</g>` : '';

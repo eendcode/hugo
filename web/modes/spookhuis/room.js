@@ -11,8 +11,12 @@
 //   stars(hints)          1–3 when solved
 //   goal()                the goal line
 //   initial               optional data-nav id to focus first
+//   arrow(dir, id)        optional: an arrow key on item `id`; return true if used (focus stays)
 //   destroy()             optional
-// The context: {rng, level, core, say(text, kind), solved(), pulse(el), wiggle(el), refresh(), busy(fn)}.
+// The context: {rng, level, data, art, core, say(text, kind), solved(), pulse(el), wiggle(el), refresh(), busy(fn)}.
+// `data` and `art` are passed through from opts untouched: a puzzle that
+// plays one given level (such as a story chapter's) reads it from data, and
+// a story skin's pictures (each puzzle lists the ones it knows) from art.
 
 import { icon } from '../../art.js';
 import { t } from '../../i18n.js';
@@ -21,7 +25,11 @@ import { app, sleep, winOverlay } from '../../shell.js';
 import { Rng } from '../../rng.js';
 
 export class RoomScreen {
-  /** opts: Puzzle, level, seed, label, onWin(stars), onNext(), onReplay(), onHome(), onMenu() */
+  /**
+   * opts: Puzzle, level, seed, data, art, label, onWin(stars), onNext(), onReplay(), onHome(), onMenu(),
+   * and optionally backdrop (a 1600×900 SVG scene behind the room, for the story mode)
+   * and noStars (the win overlay leaves the stars out: a story puzzle in the middle of a chapter).
+   */
   constructor(root, opts) {
     this.root = root;
     this.opts = opts;
@@ -32,6 +40,8 @@ export class RoomScreen {
     const ctx = {
       rng: new Rng(opts.seed),
       level: opts.level,
+      data: opts.data,
+      art: opts.art,
       core: app.core,
       say: (text, kind) => this.say(text, kind),
       solved: () => this.solved(),
@@ -47,6 +57,7 @@ export class RoomScreen {
       activate: (el) => this.onActivate(el),
       back: () => this.onBack(),
       undo: () => this.undo(),
+      arrow: (dir, el) => !this.lock && !this.done && this.puzzle.arrow?.(dir, el.dataset.nav) === true,
     });
     this.say(this.puzzle.goal());
     this.puzzle.start?.();
@@ -60,7 +71,8 @@ export class RoomScreen {
   build() {
     const undo = typeof this.puzzle.undo === 'function';
     this.root.innerHTML = `
-      <section class="play room room-${this.opts.room}">
+      <section class="play room room-${this.opts.room}${this.opts.backdrop ? ' skinned' : ''}">
+        ${this.opts.backdrop ? `<svg class="scene play-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${this.opts.backdrop}</svg>` : ''}
         <header class="play-head">
           <div class="play-label">${this.opts.label}</div>
           <div class="goal" role="status" aria-live="polite"></div>
@@ -154,14 +166,16 @@ export class RoomScreen {
   async solved() {
     if (this.done) return;
     this.done = true;
+    const stars = this.puzzle.stars(this.hints);
+    // Left (Kaart) during a finishing animation: it still counts as solved.
+    if (this.destroyed) return this.opts.onWin?.(stars);
     this.say(t('wellDone'), 'good');
     audio.play('win');
     this.root.querySelector('.room').classList.add('won');
-    const stars = this.puzzle.stars(this.hints);
     await this.opts.onWin?.(stars);
     await sleep(1100);
     if (this.destroyed) return;
-    winOverlay(this.root, stars, { onNext: this.opts.onNext, onReplay: this.opts.onReplay, onHome: this.opts.onHome });
+    winOverlay(this.root, this.opts.noStars ? 0 : stars, { onNext: this.opts.onNext, onReplay: this.opts.onReplay, onHome: this.opts.onHome });
   }
 }
 

@@ -3,7 +3,8 @@
 // Every focusable thing carries `data-nav="<id>"`. Arrow keys move focus to
 // the nearest item in that direction (by on-screen position, so it works
 // for any layout). OK/Enter or a tap activates; long-press or
-// Backspace/Delete means "remove". The remote's Back button is caught with
+// Backspace/Delete means "remove". A screen's `arrow(dir, el)` handler may
+// take an arrow key for itself (return true). The remote's Back button is caught with
 // history sentinel entries so it never leaves the page.
 
 const ARROWS = {
@@ -135,6 +136,8 @@ export class Input {
   move(dir) {
     const items = this.items();
     const cur = this.current();
+    // A screen may use an arrow itself (e.g. up/down turns a lock's wheel).
+    if (cur && this.top?.handlers.arrow?.(dir, cur) === true) return;
     if (!cur || !items.includes(cur)) {
       if (items[0]) this.focus(items[0]);
       return;

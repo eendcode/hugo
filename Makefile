@@ -4,7 +4,7 @@ export PATH := $(HOME)/.cargo/bin:$(PATH)
 
 PORT ?= 8080
 
-.PHONY: all wasm test levels levels-roads levels-dorp levels-programma levels-lantaarn levels-wegvrij validate calibrate perf serve deploy clean
+.PHONY: all wasm test levels levels-roads levels-dorp levels-programma levels-lantaarn levels-wegvrij levels-planks validate calibrate perf serve deploy clean
 
 all: wasm
 
@@ -17,7 +17,7 @@ test:
 	cargo test --workspace --release
 
 ## Regenerate all committed level packs in web/levels.
-levels: levels-roads levels-dorp levels-programma levels-lantaarn levels-wegvrij
+levels: levels-roads levels-dorp levels-programma levels-lantaarn levels-wegvrij levels-planks
 
 ## The road game's packs (web/levels/stage-N.json).
 levels-roads:
@@ -30,6 +30,10 @@ levels-dorp:
 ## Barend's program, lantern light and the cart yard (the last takes a few minutes).
 levels-programma levels-lantaarn levels-wegvrij: levels-%:
 	cargo run --release -p levelpack -- $* generate web/levels/$*
+
+## The story mode's Planken doors (web/levels/saga/planks.json).
+levels-planks:
+	cargo run --release -p levelpack -- planks generate web/levels/saga
 
 ## Re-check every committed level and puzzle (unique solutions, all packs).
 validate:

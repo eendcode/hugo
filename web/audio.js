@@ -133,6 +133,28 @@ const SOUNDS = {
     src.stop(t0 + 0.7);
   },
   owl: () => owl(),
+  // Book 4: far-away thunder (softer in "zacht"), and the Nachtbok shrinking: a falling slide and a pop.
+  thunder: () => {
+    const t0 = ctx.currentTime;
+    const src = noise();
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 220;
+    const g = ctx.createGain();
+    const peak = scare === 'zacht' ? 0.12 : scare === 'eng' ? 0.45 : 0.3;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.08);
+    g.gain.exponentialRampToValueAtTime(peak * 0.4, t0 + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8);
+    src.connect(f).connect(g).connect(master);
+    src.start(t0);
+    src.stop(t0 + 1.9);
+  },
+  shrink: () => {
+    tone({ freq: 700, slide: 180, type: 'triangle', dur: 0.45, gain: 0.18 });
+    tone({ freq: 1400, at: 0.42, dur: 0.12, gain: 0.16 });
+    [784, 1047].forEach((f, i) => tone({ freq: f, at: 0.55 + i * 0.1, dur: 0.3, gain: 0.12 }));
+  },
 };
 
 /** Bell tower notes, lowest to highest (C, E, G, high C). */

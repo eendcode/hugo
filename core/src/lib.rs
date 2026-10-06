@@ -10,6 +10,7 @@ pub mod generator;
 pub mod lantern;
 pub mod mansion;
 pub mod model;
+pub mod planks;
 pub mod program;
 pub mod rng;
 pub mod rules;
@@ -214,5 +215,40 @@ mod wasm {
         let y: carts::Yard = serde_json::from_str(yard)?;
         let positions: Vec<u8> = serde_json::from_str(positions)?;
         json(&carts::hint(&y, &positions))
+    }
+
+    // ---------- Planken ----------
+
+    use crate::planks;
+
+    fn door_and_placed(door: &str, placed: &str) -> Result<(planks::Door, Vec<planks::Placement>), JsError> {
+        Ok((serde_json::from_str(door)?, serde_json::from_str(placed)?))
+    }
+
+    /// A door with exactly one covering at `difficulty` (0–7), as JSON.
+    #[wasm_bindgen]
+    pub fn planks_generate(seed: u32, difficulty: u32) -> Result<String, JsError> {
+        json(&planks::generate(seed as u64, difficulty).map_err(|e| JsError::new(&e))?)
+    }
+
+    /// With planks `[{plank, rot, anchor}, …]` nailed on: `{won, covered}`.
+    #[wasm_bindgen]
+    pub fn planks_check(door: &str, placed: &str) -> Result<String, JsError> {
+        let (d, placed) = door_and_placed(door, placed)?;
+        json(&planks::check(&d, &placed).map_err(|e| JsError::new(&e))?)
+    }
+
+    /// `{type: "Place", plank, rot, anchor} | {type: "Remove", plank}`, or `null`.
+    #[wasm_bindgen]
+    pub fn planks_hint(door: &str, placed: &str) -> Result<String, JsError> {
+        let (d, placed) = door_and_placed(door, placed)?;
+        json(&planks::hint(&d, &placed).map_err(|e| JsError::new(&e))?)
+    }
+
+    /// Number of coverings, stopping at `limit`.
+    #[wasm_bindgen]
+    pub fn planks_count(door: &str, limit: u32) -> Result<u32, JsError> {
+        let d: planks::Door = serde_json::from_str(door)?;
+        Ok(d.count(limit as usize) as u32)
     }
 }

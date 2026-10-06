@@ -1,4 +1,7 @@
 // De schilderijenzaal: find the pairs among the paintings on the wall.
+// A story skin (ctx.art, see the saga's engines.js) may give its own
+// pictures: ctx.art.pictures() returns a list of functions, each drawing one
+// picture in a 100×100 box; it needs at least as many as the level has pairs.
 
 import { t } from '../../i18n.js';
 import * as audio from '../../audio.js';
@@ -25,7 +28,8 @@ export class Pairs {
     this.w = w;
     this.h = h;
     const pairs = (w * h) / 2;
-    const pics = ctx.rng.shuffle(PAIR_PICTURES.map((_, i) => i)).slice(0, pairs);
+    this.list = ctx.art?.pictures?.() ?? PAIR_PICTURES;
+    const pics = ctx.rng.shuffle(this.list.map((_, i) => i)).slice(0, pairs);
     this.cards = ctx.rng.shuffle([...pics, ...pics]);
     this.open = [];
     this.found = new Set();
@@ -39,7 +43,7 @@ export class Pairs {
 
   html() {
     return `<div class="pairs" style="--cols:${this.w}; --rows:${this.h}">
-      ${this.cards.map((pic, i) => `<button class="card" data-nav="p-${i}"><svg class="back" viewBox="0 0 100 100"><rect x="6" y="6" width="88" height="88" rx="8"/><text x="50" y="66">?</text></svg><svg class="front" viewBox="0 0 100 100">${PAIR_PICTURES[pic]()}</svg></button>`).join('')}
+      ${this.cards.map((pic, i) => `<button class="card" data-nav="p-${i}"><svg class="back" viewBox="0 0 100 100"><rect x="6" y="6" width="88" height="88" rx="8"/><text x="50" y="66">?</text></svg><svg class="front" viewBox="0 0 100 100">${this.list[pic]()}</svg></button>`).join('')}
     </div>`;
   }
 

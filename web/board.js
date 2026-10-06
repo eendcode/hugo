@@ -1,7 +1,7 @@
 // The play screen: SVG board, tray, buttons, feedback and celebration.
 
 import { road, ground, scenery, mist, pim, chapel, treasure, dame, icon, blockBase, grass } from './art.js';
-import { t, treasureName } from './i18n.js';
+import { t, textOr, treasureName } from './i18n.js';
 import { Game, isBlock, shape } from './game.js';
 import * as audio from './audio.js';
 
@@ -10,15 +10,40 @@ const IDLE_DRIFT_MS = 20000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** The board's art; a story skin (opts.art) can replace any of these. */
+const ART = {
+  ground,
+  road,
+  scenery,
+  /** The finish cell's building, over its road. */
+  finish: (lit) => `<g transform="translate(10 6) scale(.8)">${chapel({ lit })}</g>`,
+  /** The figure that walks the route. */
+  pim: () => pim(),
+  /** The figure on the patrol loop, and the icon on the button that shows its loop. */
+  patrol: (scare) => dame({ scare }),
+  lookIcon: () => icon('look'),
+  /** A treasure on its road (0 kandelaar, 1 beker, 2 klokje; in ordered levels also the visiting order). */
+  treasure,
+  /** The Witte Dame floating beside a board without a patrol; a skin may set it to null (none). */
+  companion: (scare) => dame({ scare }),
+};
+
 export class PlayScreen {
   /**
    * @param {object} opts
    *   level, core, input, scare, label,
-   *   onWin(stars) → Promise|void, onNext(), onReplay(), onHome(), onMenu()
+   *   onWin(stars) → Promise|void, onNext(), onReplay(), onHome(), onMenu(),
+   *   and optionally, when the story mode hosts the screen: goal (replaces
+   *   the goal line), text (the story's words for some messages: dame,
+   *   firstTreasure and orderFirst, and treasure, a treasure's name; {n} is
+   *   its number), backdrop (a 1600×900 SVG scene behind the screen) and
+   *   art (any of ground, road, scenery, finish, pim, patrol, lookIcon,
+   *   treasure, companion; see ART).
    */
   constructor(root, opts) {
     this.root = root;
     this.opts = opts;
+    this.art = { ...ART, ...opts.art };
     this.input = opts.input;
     this.game = new Game(opts.level, opts.core);
     this.level = opts.level;
@@ -58,7 +83,8 @@ export class PlayScreen {
     const { width: w, height: h } = this.level;
     const patrol = this.level.patrol?.length > 0;
     this.root.innerHTML = `
-      <section class="play" data-patrol="${patrol}" style="--n: ${Math.max(w, h)}">
+      <section class="play${this.opts.backdrop ? ' skinned' : ''}" data-patrol="${patrol}" style="--n: ${Math.max(w, h)}">
+        ${this.opts.backdrop ? `<svg class="scene play-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${this.opts.backdrop}</svg>` : ''}
         <header class="play-head">
           <div class="play-label">${this.opts.label}</div>
           <div class="goal" role="status" aria-live="polite"></div>
@@ -73,12 +99,12 @@ export class PlayScreen {
             <g class="patrol-layer"></g>
             <g class="fx"></g>
             <g class="actors">
-              <g class="actor pim-actor"><g class="actor-inner">${pim()}</g></g>
-              ${patrol ? `<g class="actor dame-actor"><g class="actor-inner">${dame({ scare: this.opts.scare })}</g></g>` : ''}
+              <g class="actor pim-actor"><g class="actor-inner">${this.art.pim()}</g></g>
+              ${patrol ? `<g class="actor dame-actor"><g class="actor-inner">${this.art.patrol(this.opts.scare)}</g></g>` : ''}
             </g>
             <rect class="ring" x="-2" y="-2" width="104" height="104" rx="14" visibility="hidden"/>
           </svg>
-          ${patrol ? '' : `<div class="float-dame" aria-hidden="true"><svg viewBox="0 0 100 100">${dame({ scare: this.opts.scare })}</svg></div>`}
+          ${patrol || !this.art.companion ? '' : `<div class="float-dame" aria-hidden="true"><svg viewBox="0 0 100 100">${this.art.companion(this.opts.scare)}</svg></div>`}
         </div>
         <aside class="side">
           <div class="tray" role="list"></div>
@@ -86,7 +112,7 @@ export class PlayScreen {
             ${this.button('undo', 'undo', t('undo'))}
             ${this.button('hint', 'hint', t('hint'))}
             ${this.button('remove', 'remove', t('remove'))}
-            ${patrol ? this.button('look', 'look', t('look')) : ''}
+            ${patrol ? this.button('look', 'look', t('look'), '', this.art.lookIcon()) : ''}
             ${this.button('home', 'home', t('home'))}
             ${this.button('menu', 'gear', '', 'small')}
           </div>
@@ -109,8 +135,8 @@ export class PlayScreen {
     if (this.dameEl) this.moveActor(this.dameEl, this.level.patrol[0], false);
   }
 
-  button(id, iconName, label, cls = '') {
-    return `<button class="btn ${cls}" data-nav="b-${id}" aria-label="${label || id}">${icon(iconName)}${label ? `<span>${label}</span>` : ''}</button>`;
+  button(id, iconName, label, cls = '', iconHtml = icon(iconName)) {
+    return `<button class="btn ${cls}" data-nav="b-${id}" aria-label="${label || id}">${iconHtml}${label ? `<span>${label}</span>` : ''}</button>`;
   }
 
   startCell() {
@@ -161,6 +187,7 @@ export class PlayScreen {
     const c = this.level.cells[i];
     const reached = this.game.result?.reached?.includes(i);
     const tile = c.tile;
+    const { ground, road, scenery } = this.art;
     switch (c.kind) {
       case 'Empty': {
         const p = cover[i];
@@ -176,11 +203,11 @@ export class PlayScreen {
       case 'Start':
         return ground('fixed') + road(tile.kind, tile.rot);
       case 'Finish':
-        return ground('fixed') + road(tile.kind, tile.rot) + `<g transform="translate(10 6) scale(.8)">${chapel({ lit: !!reached })}</g>`;
+        return ground('fixed') + road(tile.kind, tile.rot) + this.art.finish(!!reached);
       case 'Waypoint':
         return (
           ground('fixed') + road(tile.kind, tile.rot) +
-          `<g class="treasure-slot" data-order="${c.order}"><circle cx="50" cy="50" r="30" fill="url(#g-lantern)" opacity=".7"/><g transform="translate(24 22) scale(.52)">${treasure(c.order)}</g>` +
+          `<g class="treasure-slot" data-order="${c.order}"><circle cx="50" cy="50" r="30" fill="url(#g-lantern)" opacity=".7"/><g transform="translate(24 22) scale(.52)">${this.art.treasure(c.order)}</g>` +
           (this.level.ordered ? `<g class="order-badge"><circle cx="82" cy="18" r="13"/><text x="82" y="24" text-anchor="middle">${c.order + 1}</text></g>` : '') +
           '</g>'
         );
@@ -237,7 +264,7 @@ export class PlayScreen {
         .map((t, k) => {
           const x = (k % s.w) * 100;
           const y = Math.floor(k / s.w) * 100;
-          return `<g transform="translate(${x} ${y})">${t ? road(t.kind, t.rot) : grass()}</g>`;
+          return `<g transform="translate(${x} ${y})">${t ? this.art.road(t.kind, t.rot) : grass()}</g>`;
         })
         .join('')
     );
@@ -299,7 +326,7 @@ export class PlayScreen {
             <svg viewBox="0 0 ${s.w * 100} ${s.h * 100}">${this.blockArt(s)}</svg></button>`;
         }
         return `<button class="piece${sel}" data-nav="t${i}" role="listitem" aria-pressed="${!!sel}">
-          <svg viewBox="0 0 100 100">${ground('placed')}${road(piece.kind, this.game.trayRot[i])}</svg></button>`;
+          <svg viewBox="0 0 100 100">${this.art.ground('placed')}${this.art.road(piece.kind, this.game.trayRot[i])}</svg></button>`;
       })
       .join('');
     this.showPreview(null);
@@ -326,6 +353,7 @@ export class PlayScreen {
   }
 
   showGoal() {
+    if (this.opts.goal) return this.say(this.opts.goal);
     const wps = this.level.cells.filter((c) => c.kind === 'Waypoint').length;
     let text = t('goal');
     if (wps === 1) text = t('goalTreasure', { t: treasureName(0) });
@@ -337,9 +365,11 @@ export class PlayScreen {
   // ---------- actions ----------
 
   onActivate(el) {
+    const id = el.dataset.nav;
+    // Kaart always works, also during the ride (a win still counts, see celebrate()).
+    if (id === 'b-home') return this.opts.onHome();
     if (this.busy) return;
     audio.unlock();
-    const id = el.dataset.nav;
     if (id.startsWith('c')) this.activateCell(Number(id.slice(1)));
     else if (id.startsWith('t')) this.activateTray(Number(id.slice(1)));
     else if (id.startsWith('b-')) this.activateButton(id.slice(2));
@@ -368,7 +398,7 @@ export class PlayScreen {
     const c = this.level.cells[i];
     if (c.kind !== 'Empty') {
       this.wiggle(i);
-      if (c.kind === 'Waypoint') this.say(treasureName(c.order));
+      if (c.kind === 'Waypoint') this.say(this.treasureName(c.order));
       else if (c.kind === 'Mist') this.say(t('mist'), 'warn');
       else if (c.kind !== 'Obstacle') this.say(t('locked'));
       return;
@@ -423,8 +453,6 @@ export class PlayScreen {
         return;
       case 'look':
         return this.lookAtDame();
-      case 'home':
-        return this.opts.onHome();
       case 'menu':
         return this.opts.onMenu();
     }
@@ -482,6 +510,12 @@ export class PlayScreen {
     setTimeout(() => r.remove(), 2600);
   }
 
+  /** A treasure's name: the story's words for it (opts.text.treasure, {n} its number), or the road game's own. */
+  treasureName(order) {
+    const own = this.opts.text?.treasure;
+    return own ? textOr(this.opts.text, 'treasure', { n: order + 1 }) : treasureName(order);
+  }
+
   treasureCell(order) {
     return this.level.cells.findIndex((c) => c.kind === 'Waypoint' && c.order === order);
   }
@@ -494,15 +528,15 @@ export class PlayScreen {
         this.pulse(issue.cell);
         break;
       case 'MissingTreasure':
-        this.say(t('firstTreasure', { t: treasureName(issue.order) }), 'warn');
+        this.say(textOr(this.opts.text, 'firstTreasure', { t: this.treasureName(issue.order), n: issue.order + 1 }), 'warn');
         this.pulse(this.treasureCell(issue.order));
         break;
       case 'WrongOrder':
-        this.say(t('orderFirst', { t: treasureName(issue.order) }), 'warn');
+        this.say(textOr(this.opts.text, 'orderFirst', { t: this.treasureName(issue.order), n: issue.order + 1 }), 'warn');
         this.pulse(this.treasureCell(issue.order));
         break;
       case 'Dame':
-        this.say(t('dame'), 'warn');
+        this.say(textOr(this.opts.text, 'dame'), 'warn');
         await this.walk(route.slice(0, issue.tick + 1), { stopAtEnd: true });
         this.pulse(issue.cell);
         await sleep(900);
@@ -558,7 +592,8 @@ export class PlayScreen {
     const route = this.game.result.route;
     this.say(t('wellDone'), 'good');
     await this.walk(route, { celebrate: true });
-    if (this.destroyed) return;
+    // Left (Kaart) during the ride: the level still counts as won.
+    if (this.destroyed) return this.opts.onWin?.(this.game.stars());
     this.busy = true;
     audio.play('win');
     this.root.querySelector('.play').classList.add('won');

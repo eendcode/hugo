@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "books": [
+    {
+      "book": 1,
+      "title": "De nacht van de bokkenrijders",
+      "file": "book-1.json"
+    },
+    {
+      "book": 2,
+      "title": "Red Barend!",
+      "file": "book-2.json"
+    },
+    {
+      "book": 3,
+      "title": "Wie heeft het klokje gestolen?",
+      "file": "book-3.json"
+    },
+    {
+      "book": 4,
+      "title": "De Nachtbok",
+      "file": "book-4.json"
+    }
+  ]
+}

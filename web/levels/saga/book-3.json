@@ -1,0 +1,320 @@
+{
+  "book": 3,
+  "title": "Wie heeft het klokje gestolen?",
+  "bag": ["vergrootglas"],
+  "suspects": [
+    {"id": "hugo", "picture": "hugoLief", "word": "Hugo"},
+    {"id": "geit", "picture": "hugosGeit", "word": "geit"},
+    {"id": "knor", "picture": "knor", "word": "Knor"},
+    {"id": "kat", "picture": "kat", "word": "kat"},
+    {"id": "uil", "picture": "uil", "word": "uil"},
+    {"id": "ekster", "picture": "ekster", "word": "ekster"}
+  ],
+  "intro": [
+    {"scene": "painting", "lines": ["Hugo zat vast in een schilderij.", "Pim hielp hem eruit."]},
+    {"scene": "kind", "lines": ["Sinds die dag is Hugo lief.", "Hij steelt nooit meer."]},
+    {
+      "scene": "gone",
+      "lines": ["Maar op een ochtend…", "het klokje van de kapel is weg!"]
+    },
+    {
+      "scene": "blame",
+      "lines": ["„Dat was Hugo!” roept het dorp.", "Hugo huilt.", "„Ik was het niet!”"]
+    },
+    {
+      "scene": "board",
+      "lines": ["Pim pakt zijn vergrootglas.", "„Wij zoeken het uit, Barend.”"]
+    }
+  ],
+  "chapters": [
+    {
+      "title": "Wat is er anders?",
+      "scene": "look",
+      "items": ["veerZwartWit"],
+      "uses": ["vergrootglas"],
+      "steps": [
+        {
+          "story": [{"scene": "look", "lines": ["Kijk goed.", "Gisteren en vandaag."]}]
+        },
+        {
+          "puzzle": {
+            "engine": "spot",
+            "scene": "chapel",
+            "grid": [4, 3],
+            "zones": [
+              {"id": "klokje", "x": 300, "y": 145, "r": 80, "story": true},
+              {"id": "veer", "x": 305, "y": 482, "r": 70, "story": true},
+              {"id": "sporen", "x": 500, "y": 535, "r": 92, "story": true},
+              {"id": "bloem", "x": 80, "y": 372, "r": 58},
+              {"id": "vlinder", "x": 650, "y": 120, "r": 60}
+            ],
+            "goal": "Wat is er anders? Tik het aan!",
+            "skin": "spot"
+          }
+        },
+        {"story": [{"scene": "step", "lines": ["Wat ligt daar op de stoep?"]}]},
+        {
+          "riddle": {
+            "lines": ["Ik ben licht.", "Ik kom van een vogel.", "Blaas maar, dan zweef ik weg.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "veer", "word": "veer", "right": true, "item": "veerZwartWit"},
+              {"picture": "blad", "word": "blad", "reply": "Nee, een blad komt van een boom!"},
+              {"picture": "ei", "word": "ei", "reply": "Nee! Blaas op een ei, dan zweeft het niet."},
+              {"picture": "steen", "word": "steen", "reply": "Nee, een steen is veel te zwaar!"}
+            ]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "feathers",
+              "lines": ["De veer is zwart en wit.", "Maar de veer van Hugo is rood!", "Was het Hugo wel?"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Wie kan vliegen?",
+      "scene": "sand",
+      "steps": [
+        {
+          "story": [{"scene": "sand", "lines": ["Er zijn geen voetstappen in het zand.", "De dief kwam door de lucht!"]}]
+        },
+        {
+          "riddle": {
+            "lines": ["Wie kan vliegen?", "Tik ze allemaal aan!"],
+            "answers": [
+              {"picture": "ekster", "word": "ekster", "right": true},
+              {"picture": "uil", "word": "uil", "right": true},
+              {"picture": "hugosGeit", "word": "geit van Hugo", "right": true},
+              {"picture": "kat", "word": "kat", "reply": "Nee, een kat kan niet vliegen!"},
+              {"picture": "knor", "word": "Knor", "reply": "Knor? Die vliegt alleen op een geit!"}
+            ]
+          }
+        },
+        {
+          "suspects": {
+            "lines": ["Een kat kan niet vliegen.", "Knor ook niet.", "Draai ze om!"],
+            "turn": ["kat", "knor"],
+            "wrong": "Nee! Alleen de kat en Knor."
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "owl",
+              "lines": ["De uil was de hele nacht wakker.", "„Los mijn sommen op,” zegt de uil.", "„Dan vertel ik wat ik zag.”"],
+              "sound": "owl"
+            }
+          ]
+        },
+        {
+          "puzzle": {"engine": "numbers", "level": 1, "seed": 3201, "goal": "Welk getal komt er nu?", "skin": "owl"}
+        },
+        {
+          "story": [{"scene": "owlSaw", "lines": ["„Ik zag iets vliegen.”", "„Het had iets dat glom!”"]}]
+        },
+        {
+          "suspects": {
+            "scene": "owl",
+            "lines": ["De uil keek alleen maar.", "Zij is het niet.", "Draai de uil om!"],
+            "turn": ["uil"],
+            "wrong": "Nee, alleen de uil!"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Het schaakbord van Hugo",
+      "scene": "kitchen",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "kitchen",
+              "lines": ["De koster zegt:", "„Hugo was bij mij!”", "„We speelden de hele nacht schaak.”", "„Het spel is nog niet af.”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben de baas op het bord.", "Toch zet ik maar één stap.", "Wie ben ik?"],
+            "answers": [
+              {"picture": "koning", "word": "de koning", "right": true},
+              {"picture": "paard", "word": "het paard", "reply": "Nee, het paard springt!"},
+              {"picture": "toren", "word": "de toren", "reply": "Nee, de toren gaat heel ver!"},
+              {"picture": "pion", "word": "de pion", "reply": "Nee, de pion is niet de baas."}
+            ]
+          }
+        },
+        {
+          "story": [{"scene": "kitchen", "lines": ["Hugo heeft de lichte stukken.", "Help Hugo.", "Maak het spel af!"]}]
+        },
+        {
+          "puzzle": {
+            "engine": "chess",
+            "from": "generated: puzzles::mate_with(seed 6839, 5×5 board, mate in 2, one extra villager, one extra robber); the key move takes the rook (checked by `make validate`)",
+            "goal": "Zet de koning mat in twee zetten!",
+            "text": {
+              "chessRobber": "Dat zijn de stukken van de koster.",
+              "chessPick": "Tik eerst op een licht stuk.",
+              "chessCantGo": "Zo kan dat stuk niet.",
+              "goalMate1": "Nog één zet: schaakmat!",
+              "mateEscape": "Bijna! De koning kan nog weg.",
+              "mateEscapeLater": "Oei, de koning loopt weg. Nog een keer!",
+              "mateTaken": "Oei! De koster pakt je toren."
+            },
+            "skin": "kitchen",
+            "data": {"kind":"Mate","position":{"width":5,"height":5,"rows":[".k...",".....","K....","..r..","..R.."],"turn":"White","rules":"Classic"},"moves":2,"seed":6839,"difficulty":0,"score":27}
+          }
+        },
+        {
+          "story": [
+            {"scene": "mate", "lines": ["Schaakmat!", "Het klopt! Hugo was het niet."]},
+            {
+              "scene": "stable",
+              "lines": ["En de geit van Hugo?", "Die sliep de hele nacht in de stal."]
+            }
+          ]
+        },
+        {
+          "suspects": {
+            "scene": "stable",
+            "lines": ["Hugo en zijn geit waren het niet.", "Draai ze om!"],
+            "turn": ["hugo", "geit"],
+            "wrong": "Nee, die niet. Kijk nog eens!"
+          }
+        },
+        {
+          "story": [{"scene": "oneLeft", "lines": ["Wie is er nog over?", "„De ekster!” roept Pim."]}]
+        }
+      ]
+    },
+    {
+      "title": "Het verenpad",
+      "scene": "trail",
+      "uses": ["veerZwartWit"],
+      "steps": [
+        {
+          "story": [{"scene": "trail", "lines": ["Overal liggen zwart-witte veren.", "Ze wijzen de weg."]}]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben groot.", "Ik heb een stam en veel blad.", "Vogels wonen in mij.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "boom", "word": "boom", "right": true},
+              {"picture": "huis", "word": "huis", "reply": "Nee, een huis heeft geen blad!"},
+              {"picture": "berg", "word": "berg", "reply": "Nee, een berg heeft geen stam!"},
+              {"picture": "bloem", "word": "bloem", "reply": "Nee, een bloem is veel te klein!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "road",
+            "from": "generated: levelpack generator with difficulty 4's settings on 5×5, three ordered treasures, no mist, trails, blocks or patrol, seed 258507867; without the order rule there is a second route (feather 3 first), so the order matters",
+            "goal": "Leg het pad. Pak de veren: 1, 2, 3!",
+            "text": {"treasure": "Veer {n}", "firstTreasure": "Pak eerst veer {n}!", "orderFirst": "Eerst veer {n}!"},
+            "skin": "woods",
+            "data": {"width":5,"height":5,"cells":[{"kind":"Obstacle","scenery":"Dune"},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Dune"},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Dune"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Finish","tile":{"kind":"DeadEnd","rot":2}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Waypoint","tile":{"kind":"Straight","rot":1},"order":0},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Waypoint","tile":{"kind":"Straight","rot":0},"order":1},{"kind":"Start","tile":{"kind":"DeadEnd","rot":1}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Campfire"},{"kind":"Road","tile":{"kind":"Curve","rot":0}},{"kind":"Road","tile":{"kind":"Straight","rot":1}},{"kind":"Road","tile":{"kind":"Straight","rot":1}},{"kind":"Waypoint","tile":{"kind":"Curve","rot":3},"order":2}],"tray":[{"kind":"Curve","rot":1},{"kind":"Curve","rot":2},{"kind":"Straight","rot":1},{"kind":"Curve","rot":2},{"kind":"Straight","rot":1},{"kind":"Straight","rot":1}],"rotatable":true,"ordered":true,"patrol":[],"seed":258507867,"difficulty":4,"score":84}
+          }
+        },
+        {
+          "story": [{"scene": "bigTree", "lines": ["Daar is de grote boom!", "Hoog in de boom glimt iets."]}]
+        }
+      ]
+    },
+    {
+      "title": "Het nest",
+      "scene": "nestDark",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "nestDark",
+              "lines": ["Hoog in de boom ligt een nest.", "Er glimt van alles in.", "Maar het is donker."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben rond.", "Ik ben van takjes.", "Een vogel legt er eitjes in.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "nest", "word": "nest", "right": true},
+              {"picture": "mand", "word": "mand", "reply": "Nee, in een mand zitten appels!"},
+              {"picture": "hoed", "word": "hoed", "reply": "Nee, een hoed zet je op je hoofd!"},
+              {"picture": "bal", "word": "bal", "reply": "Nee, een bal is niet van takjes!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "lantern",
+            "from": "generated: lantern::generate(seed 7, difficulty 3, 5×5, two turns, three stones, three walls)",
+            "goal": "Schijn met de spiegels op alles wat glimt!",
+            "skin": "nest",
+            "data": {"width":5,"height":5,"cells":["Wall","Empty","Lantern","Empty","Empty","Empty","Empty","Empty","Stone","Empty","Wall","Empty","Empty","Empty","Stone","Wall","Empty","Empty","Empty","Stone","Empty","Empty","Empty","Empty","Wall"],"lantern":2,"facing":2,"mirrors":2,"solution":[[7,"Backslash"],[9,"Backslash"]],"seed":7,"difficulty":3,"score":49}
+          }
+        },
+        {
+          "story": [{"scene": "nestLit", "lines": ["Kijk! Daar is het klokje!", "En een lepel en een munt!"]}]
+        }
+      ]
+    },
+    {
+      "title": "Ruilen",
+      "scene": "magpie",
+      "items": ["klok"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "magpie",
+              "lines": ["„Het klokje glimt.”", "„Het is van mij!” zegt de ekster.", "Hugo denkt na.", "„Ik heb ook iets dat glimt…”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben rond en ik glim.", "Ik zit op een jas.", "Ik maak je jas dicht.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "knoop", "word": "knoop", "right": true, "item": null},
+              {"picture": "munt", "word": "munt", "reply": "Nee, een munt zit niet op een jas!"},
+              {"picture": "bal", "word": "bal", "reply": "Nee, met een bal speel je!"},
+              {"picture": "maan", "word": "maan", "reply": "Nee, de maan staat in de lucht!"}
+            ]
+          }
+        },
+        {
+          "story": [{"scene": "buttons", "lines": ["Hugo heeft veel mooie knopen.", "Maar de ekster wil altijd twee dezelfde."]}]
+        },
+        {
+          "puzzle": {"engine": "pairs", "level": 2, "seed": 3601, "goal": "Zoek twee dezelfde knopen!", "skin": "buttons"}
+        },
+        {
+          "story": [
+            {
+              "scene": "trade",
+              "lines": ["De ekster is blij met de knopen.", "Pim krijgt het klokje terug!"]
+            },
+            {
+              "scene": "towerUp",
+              "lines": ["Hugo hangt het klokje in de toren.", "Hij speelt het liedje van het klokje."]
+            }
+          ]
+        },
+        {
+          "puzzle": {"engine": "bells", "level": 1, "seed": 3602, "goal": "Speel het liedje van het klokje!", "skin": "towerDay"}
+        }
+      ]
+    }
+  ],
+  "finale": [
+    {"scene": "back", "lines": ["Het klokje hangt weer in de toren."], "sound": "chapel"},
+    {"scene": "sorry", "lines": ["„Sorry, Hugo,” zegt het dorp."]},
+    {"scene": "ring", "lines": ["Hugo mag de klok luiden.", "Bim bam!"], "sound": "chapel"},
+    {"scene": "friends", "lines": ["Pim, Barend en Hugo zijn nu vrienden.", "Einde."]},
+    {"scene": "nestNight", "silent": true}
+  ]
+}

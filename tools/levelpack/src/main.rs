@@ -2,15 +2,18 @@
 //! and calibrates/benchmarks the generator.
 //!
 //!     levelpack generate [DIR]   write index.json + stage-N.json
-//!     levelpack validate [DIR]   re-solve every level; fail if not unique (all packs)
+//!     levelpack validate [DIR]   re-solve every level; fail if not unique (all packs, saga books)
 //!     levelpack calibrate        score distribution per difficulty and size
 //!     levelpack perf             time 100 levels per difficulty; fail over budget
 //!     levelpack dorp generate|validate [DIR]   the chess packs (web/levels/dorp)
 //!     levelpack dorp show N [DIR]              print stage N's boards
 //!     levelpack programma|lantaarn|wegvrij generate|validate [DIR] | show N [DIR]
+//!     levelpack planks generate|validate|show [DIR]   the story's doors (web/levels/saga)
 
 mod chess;
 mod packs;
+mod planks;
+mod saga;
 
 use duinkapel_core::generator::{self, Params, MAX_DIFFICULTY};
 use duinkapel_core::model::Level;
@@ -203,7 +206,7 @@ fn perf() -> Result<(), String> {
     }
 }
 
-const USAGE: &str = "usage: levelpack generate|validate [DIR] | calibrate | perf | dorp|programma|lantaarn|wegvrij ...";
+const USAGE: &str = "usage: levelpack generate|validate [DIR] | calibrate | perf | dorp|programma|lantaarn|wegvrij|planks ...";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -216,7 +219,13 @@ fn main() -> ExitCode {
             if dorp.join("index.json").exists() {
                 chess::validate(&dorp)?;
             }
-            packs::validate_all(&dir)
+            packs::validate_all(&dir)?;
+            planks::validate_in(&dir)?;
+            let books = dir.join("saga");
+            if books.join("index.json").exists() {
+                saga::validate(&books)?;
+            }
+            Ok(())
         }),
         Some("calibrate") => {
             calibrate();
@@ -236,6 +245,7 @@ fn main() -> ExitCode {
                 _ => Err("usage: levelpack dorp generate|validate [DIR] | show N [DIR]".into()),
             }
         }
+        Some("planks") => planks::command(&args[1..]),
         Some(name) => packs::command(name, &args[1..]).unwrap_or_else(|| Err(USAGE.into())),
         None => Err(USAGE.into()),
     };

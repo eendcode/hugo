@@ -1,5 +1,8 @@
 // Barends programma: lay cards in the slots, press Start, watch Barend go.
 // Running the program and hints come from the Rust core (program_*).
+// opts.art (optional) swaps the field's art: grass() for a cell's ground,
+// tree(), apple() and stable() (where Barend must end up); opts.text can
+// give the bump messages (bumpTree, bumpFence) other words.
 
 import { icon } from '../../art.js';
 import { t } from '../../i18n.js';
@@ -41,11 +44,12 @@ export class ProgramScreen extends BoardScreen {
 
   boardHtml() {
     const f = this.level;
+    const art = { grass, tree, apple, stable, ...this.opts.art };
     const cells = f.cells
       .map((c, i) => {
         const [x, y] = this.cellBox(i);
-        const inner = { Tree: tree(), Apple: `<g class="apple-slot" data-cell="${i}">${apple()}</g>`, Stable: stable() }[c] ?? '';
-        return `<g transform="translate(${x} ${y})">${grass()}${inner}</g>`;
+        const inner = { Tree: art.tree(), Apple: `<g class="apple-slot" data-cell="${i}">${art.apple()}</g>`, Stable: art.stable() }[c] ?? '';
+        return `<g transform="translate(${x} ${y})">${art.grass()}${inner}</g>`;
       })
       .join('');
     return `<svg class="board" viewBox="-6 -6 ${this.w * 100 + 12} ${this.h * 100 + 12}">
@@ -174,7 +178,8 @@ export class ProgramScreen extends BoardScreen {
     this.root.querySelector('.play').classList.add('walking');
     const eaten = new Set();
     for (let k = 1; k < run.steps.length; k++) {
-      if (this.destroyed) return;
+      // Left (Kaart) during the walk: a program that gets home still counts.
+      if (this.destroyed) return run.ending.type === 'Home' ? this.win() : undefined;
       const [cell, dir] = run.steps[k];
       this.programEl.querySelectorAll('.running').forEach((e) => e.classList.remove('running'));
       this.programEl.querySelector(`[data-nav="s${owner[k - 1]}"]`)?.classList.add('running');
@@ -196,7 +201,7 @@ export class ProgramScreen extends BoardScreen {
     audio.play('whoosh');
     if (end.type === 'Bump') {
       this.actor.classList.add('bump');
-      this.say(end.cell < 0 ? t('bumpFence') : t('bumpTree'), 'warn');
+      this.say(end.cell < 0 ? this.text('bumpFence') : this.text('bumpTree'), 'warn');
     } else {
       const apples = this.level.cells.filter((c) => c === 'Apple').length;
       this.say(eaten.size < apples && run.steps.some(([c]) => this.level.cells[c] === 'Stable') ? t('applesFirst') : t('notHome'), 'warn');

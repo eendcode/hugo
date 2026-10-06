@@ -1,0 +1,382 @@
+{
+  "book": 4,
+  "title": "De Nachtbok",
+  "meter": [
+    {"id": "berg", "picture": "berg", "word": "een berg"},
+    {"id": "huis", "picture": "huis", "word": "een huis"},
+    {"id": "boom", "picture": "boom", "word": "een boom"},
+    {"id": "paard", "picture": "paardDier", "word": "een paard"},
+    {"id": "schaap", "picture": "schaap", "word": "een schaap"},
+    {"id": "hond", "picture": "hond", "word": "een hond"},
+    {"id": "bokje", "picture": "bokje", "word": "een bokje"}
+  ],
+  "intro": [
+    {
+      "scene": "nestNight",
+      "lines": ["Het feest is voorbij.", "Iedereen slaapt.", "Maar in het nest gloeit de zwarte steen."]
+    },
+    {
+      "scene": "crack",
+      "lines": ["Krak!", "De steen breekt open."],
+      "sound": "thunder"
+    },
+    {
+      "scene": "storm",
+      "lines": ["Er komt een storm.", "Een grote, zwarte storm."],
+      "sound": "thunder"
+    },
+    {
+      "scene": "nachtbok",
+      "lines": ["In de storm staat een reus van een bok:", "de Nachtbok!", "„Alle geiten zijn van mij!” bromt hij."]
+    },
+    {
+      "scene": "float",
+      "lines": ["Alle geiten zweven de lucht in.", "Barend ook!"]
+    },
+    {
+      "scene": "fly",
+      "lines": ["Pim houdt Barend goed vast.", "Nu vliegt Pim zelf!"]
+    }
+  ],
+  "chapters": [
+    {
+      "title": "Door de storm",
+      "scene": "allies",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "allies",
+              "lines": ["Hugo vliegt mee op zijn geit.", "„Ik help je, Pim!”"]
+            },
+            {
+              "scene": "birds",
+              "lines": ["De uil en de ekster wijzen de weg.", "Pas op voor de bliksem!"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben wit en zacht.", "Ik zweef in de lucht.", "Soms huil ik regen.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "wolk", "word": "wolk", "right": true},
+              {"picture": "schaap", "word": "schaap", "reply": "Nee, een schaap staat in de wei!"},
+              {"picture": "ballon", "word": "ballon", "reply": "Nee, een ballon huilt geen regen!"},
+              {"picture": "veer", "word": "veer", "reply": "Een veer is wit en zacht. Maar regen? Nee!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "road",
+            "from": "generated: levelpack generator with difficulty 5's settings on 5×5, no treasures, mist, trails or blocks, a 2×2 patrol loop, seed 4108",
+            "goal": "Leg een wolkenpad naar de Nachtbok. Pas op voor de bliksem!",
+            "text": {
+              "dame": "Pas op, de bliksem! Neem een andere weg."
+            },
+            "skin": "sky",
+            "data": {"width":5,"height":5,"cells":[{"kind":"Obstacle","scenery":"Pine"},{"kind":"Empty"},{"kind":"Start","tile":{"kind":"DeadEnd","rot":2}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Pine"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Heather"},{"kind":"Empty"},{"kind":"Finish","tile":{"kind":"DeadEnd","rot":1}},{"kind":"Road","tile":{"kind":"Curve","rot":2}},{"kind":"Road","tile":{"kind":"Curve","rot":0}},{"kind":"Road","tile":{"kind":"Curve","rot":2}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Curve","rot":0}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Curve","rot":0}},{"kind":"Road","tile":{"kind":"Curve","rot":3}}],"tray":[{"kind":"Straight","rot":1},{"kind":"Curve","rot":1},{"kind":"Curve","rot":2},{"kind":"Curve","rot":0},{"kind":"Straight","rot":0}],"rotatable":true,"ordered":false,"patrol":[22,21,16,17],"seed":4108,"difficulty":5,"score":69}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "giant",
+              "lines": ["Daar is de Nachtbok!", "Hij is zo groot als een berg."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De mist",
+      "scene": "mist",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "mist",
+              "lines": ["Om de Nachtbok hangt dikke mist."]
+            },
+            {
+              "scene": "dameLight",
+              "lines": ["Daar is de Witte Dame.", "„Neem mijn licht, Pim.”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik brand in het donker.", "Ik hang aan je hand.", "Ik maak de nacht licht.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "lantaarn", "word": "lantaarn", "right": true},
+              {"picture": "tas", "word": "tas", "reply": "Nee, een tas brandt niet!"},
+              {"picture": "bel", "word": "bel", "reply": "Nee, een bel zegt bim bam!"},
+              {"picture": "maan", "word": "maan", "reply": "Nee, de maan hangt niet aan je hand!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "lantern",
+            "from": "generated: lantern::generate(seed 46, difficulty 3, 5×5, two turns, three stones, three walls)",
+            "goal": "Schijn met het licht op de plekjes in de mist!",
+            "skin": "mist",
+            "data": {"width":5,"height":5,"cells":["Empty","Empty","Empty","Empty","Empty","Empty","Wall","Stone","Empty","Wall","Empty","Empty","Wall","Empty","Empty","Lantern","Stone","Stone","Empty","Empty","Empty","Wall","Empty","Empty","Empty"],"lantern":15,"facing":1,"mirrors":2,"solution":[[8,"Backslash"],[18,"Slash"]],"seed":46,"difficulty":3,"score":45}
+          }
+        },
+        {
+          "meter": {
+            "to": "huis",
+            "lines": ["De mist is weg.", "De Nachtbok krimpt!"],
+            "scene": "mistGone"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Maak de geiten los",
+      "scene": "ribbons",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "ribbons",
+              "lines": ["Alle geiten zitten vast aan de Nachtbok.", "Met linten van paars licht."]
+            },
+            {
+              "scene": "painting",
+              "lines": ["Hugo heeft het schilderij van Oma Hilde bij zich.", "„Dit is de vloek van Opa Bram,” zegt Oma."]
+            },
+            {
+              "scene": "painting",
+              "lines": ["„Maak de linten los,” zegt Oma.", "„Maar let op!", "Elk lint zit vast aan het lint ernaast.”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben lang en dun.", "Ik zit in je haar,", "of om een cadeau.", "Trek aan mij, dan ga ik los.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "lint", "word": "lint", "right": true},
+              {"picture": "slang", "word": "slang", "reply": "Nee, een slang zit niet in je haar!"},
+              {"picture": "potlood", "word": "potlood", "reply": "Nee, met een potlood teken je!"},
+              {"picture": "sok", "word": "sok", "reply": "Nee, een sok zit om je voet!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "candles",
+            "from": "generated: mansion::candles(3×3, 3 touches, seed 4300); undo the corners on top and the middle at the bottom",
+            "goal": "Maak alle linten los!",
+            "skin": "ribbons",
+            "data": {"size":3,"lit":[false,true,false,false,false,false,false,false,false]}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "goatsDown",
+              "lines": ["Alle geiten zweven zacht naar beneden.", "Alleen Barend en de geit van Hugo vliegen nog."]
+            }
+          ]
+        },
+        {
+          "meter": {
+            "to": "boom",
+            "lines": ["De Nachtbok krimpt weer!", "„Wij zijn nog niet klaar!” roept Pim."],
+            "scene": "boom"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Zet de Nachtbok vast",
+      "scene": "flee",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "flee",
+              "lines": ["De Nachtbok wil wegvluchten."]
+            },
+            {
+              "scene": "village",
+              "lines": ["Hugo en het dorp helpen.", "Zet hem vast!"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik sta op de hoek van het bord.", "Ik ben van steen.", "Ik ga recht, nooit schuin.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "toren", "word": "toren", "right": true},
+              {"picture": "loper", "word": "loper", "reply": "Nee, de loper gaat juist schuin!"},
+              {"picture": "paard", "word": "paard", "reply": "Nee, het paard springt!"},
+              {"picture": "pion", "word": "pion", "reply": "Nee, de pion staat niet op de hoek!"}
+            ]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "board4",
+              "lines": ["Hugo is een toren.", "Het dorp is de andere toren.", "Pim en Barend zijn de koning."]
+            }
+          ]
+        },
+        {
+          "puzzle": {
+            "engine": "chess",
+            "from": "searched: two rooks and a king against the lone king on 5×5, the king near the top; a mate in two with one key move (Hugo's rook steps aside) after which the Nachtbok has one way out (checked by `make validate`)",
+            "goal": "Zet de Nachtbok vast in twee zetten!",
+            "text": {
+              "chessRobber": "Dat is de Nachtbok!",
+              "chessPick": "Tik op een toren of op Pim.",
+              "chessCantGo": "Zo kan dat stuk niet.",
+              "goalMate1": "Nog één zet: schaakmat!",
+              "mateEscape": "Bijna! De Nachtbok kan nog weg.",
+              "mateEscapeLater": "Oei, hij ontsnapt. Kies een andere zet!",
+              "mateTaken": "Oei! De Nachtbok pakt de toren. Nog een keer!",
+              "stalemate": "Pat! Hij kan niet weg. Nog een keer!"
+            },
+            "skin": "skyChess",
+            "data": {"kind":"Mate","position":{"width":5,"height":5,"rows":[".....","....k","..R..","..R..","..K.."],"turn":"White","rules":"Classic"},"moves":2,"seed":0,"difficulty":0,"score":0}
+          }
+        },
+        {
+          "meter": {
+            "to": "paard",
+            "lines": ["Schaakmat!", "De Nachtbok kan niet meer weg."],
+            "scene": "caught"
+          }
+        }
+      ]
+    },
+    {
+      "title": "De drie raadsels",
+      "scene": "stare",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "stare",
+              "lines": ["De Nachtbok kijkt Pim aan.", "„Raad mijn raadsels,” bromt hij.", "„Dan ben ik weg.”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben er als het licht is.", "Ik loop met je mee.", "Ik ben zwart, maar ik doe niks.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "schaduw", "word": "schaduw", "right": true},
+              {"picture": "kat", "word": "kat", "reply": "Nee, een kat zegt miauw!"},
+              {"picture": "kraai", "word": "kraai", "reply": "Nee, een kraai vliegt weg!"},
+              {"picture": "nacht", "word": "nacht", "reply": "Nee, de nacht loopt niet met je mee!"}
+            ],
+            "by": "nachtbok"
+          }
+        },
+        {
+          "meter": {
+            "to": "schaap",
+            "lines": ["De Nachtbok was maar een grote schaduw!"],
+            "scene": "shadow"
+          }
+        },
+        {
+          "riddle": {
+            "lines": ["Ik kom elke ochtend op.", "Ik ben geel en warm.", "Dan is de nacht voorbij.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "zon", "word": "zon", "right": true},
+              {"picture": "maan", "word": "maan", "reply": "Nee, de maan komt in de nacht!"},
+              {"picture": "ster", "word": "ster", "reply": "Nee, een ster is niet warm!"},
+              {"picture": "lamp", "word": "lamp", "reply": "Nee, een lamp doe je aan en uit!"}
+            ],
+            "by": "nachtbok"
+          }
+        },
+        {
+          "meter": {
+            "to": "hond",
+            "lines": ["Kijk! De zon komt op over de duinen.", "De Nachtbok krimpt nog meer."],
+            "scene": "sunrise"
+          }
+        },
+        {
+          "riddle": {
+            "lines": ["Ik was heel lang alleen.", "In een steen, in het donker.", "Wat wil ik het liefst?"],
+            "answers": [
+              {"picture": "vriend", "word": "een vriend", "right": true},
+              {"picture": "schat", "word": "een schat", "reply": "Een schat glimt wel. Maar dat is het niet."},
+              {"picture": "storm", "word": "een storm", "reply": "Nee, geen storm meer!"},
+              {"picture": "taart", "word": "een taart", "reply": "Mmm, taart is lekker. Maar dat is het niet."}
+            ],
+            "by": "nachtbok"
+          }
+        },
+        {
+          "meter": {
+            "to": "bokje",
+            "lines": ["Pof! De Nachtbok is weg."],
+            "scene": "kid"
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "kid",
+              "lines": ["Daar staat een klein, zwart bokje.", "Het rilt."]
+            },
+            {
+              "scene": "kid",
+              "lines": ["„Ik was zo alleen,” piept het."]
+            },
+            {
+              "scene": "kopje",
+              "lines": ["Barend geeft het bokje een kopje.", "„Mèè. Kom maar mee.”"]
+            }
+          ]
+        },
+        {
+          "name": {
+            "scene": "kopje",
+            "lines": ["Het bokje heeft nog geen naam.", "Hoe heet het?", "Kies jij maar!"],
+            "names": [{"id": "nachtje", "word": "Nachtje", "picture": "bokjeNachtje"}, {"id": "pikkie", "word": "Pikkie", "picture": "bokjePikkie"}, {"id": "sterre", "word": "Sterre", "picture": "bokjeSterre"}]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "named",
+              "lines": ["„Dag, {bokje}!” zegt Pim."]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finale": [
+    {
+      "scene": "stars",
+      "lines": ["De steen breekt in duizend sterren."]
+    },
+    {
+      "scene": "free",
+      "lines": ["Alle geiten zijn vrij.", "Geen geit vliegt meer voor de rovers."]
+    },
+    {
+      "scene": "clear",
+      "lines": ["De spookmist is voor altijd weg."]
+    },
+    {
+      "scene": "stable4",
+      "lines": ["{bokje} woont nu bij Barend in de stal."]
+    },
+    {
+      "scene": "feast",
+      "lines": ["Feest bij de kapel!", "Iedereen is er.", "Einde van de saga."],
+      "sound": "chapel"
+    }
+  ]
+}

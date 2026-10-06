@@ -1,0 +1,326 @@
+{
+  "book": 2,
+  "title": "Red Barend!",
+  "intro": [
+    {
+      "scene": "taken",
+      "lines": ["Hugo heeft Barend meegenomen!", "Hij wil dat Barend zijn geiten slim maakt."]
+    },
+    {
+      "scene": "way",
+      "lines": ["Pim gaat naar het huis van Hugo.", "Hij is een beetje bang.", "Maar Barend is zijn vriend!"]
+    }
+  ],
+  "chapters": [
+    {
+      "title": "Het hek",
+      "scene": "gate",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "gate",
+              "lines": ["Het hek zit op slot.", "Er hangt een slot met drie wieltjes."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Tel de geiten op het hek.", "Tel de ramen in de toren.", "Tel de sterren boven het dak.", "Dat is de code!"]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "lock",
+            "code": [4, 3, 5],
+            "goal": "Tel goed. Draai de wieltjes!",
+            "skin": "gate"
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "gateOpen",
+              "lines": ["Klik!", "Het hek gaat open."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De gang",
+      "scene": "corridor",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "corridor",
+              "lines": ["Binnen loopt een rover.", "Hij slaapwandelt!", "Zzz…", "Pim mag geen geluid maken."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik lig op de vloer.", "Je loopt over mij.", "Maar je hoort je voeten niet.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "kleed", "word": "kleed", "right": true},
+              {"picture": "trom", "word": "trom", "reply": "Nee! Een trom maakt juist veel lawaai!"},
+              {"picture": "bel", "word": "bel", "reply": "Nee, een bel maakt de rover wakker!"},
+              {"picture": "emmer", "word": "emmer", "reply": "Nee, over een emmer struikel je!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "road",
+            "from": "generated: levelpack generator, difficulty 5 on 5×5 without treasures, mist or blocks, seed 1401680",
+            "goal": "Leg een loper naar de deur. Pas op voor de rover!",
+            "text": {"dame": "Sst! Daar loopt de rover. Neem een andere weg."},
+            "skin": "corridor",
+            "data": {"width":5,"height":5,"cells":[{"kind":"Empty"},{"kind":"Obstacle","scenery":"Dune"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Finish","tile":{"kind":"DeadEnd","rot":2}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Curve","rot":3}},{"kind":"Obstacle","scenery":"Dune"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Straight","rot":0}},{"kind":"Empty"},{"kind":"Start","tile":{"kind":"DeadEnd","rot":1}},{"kind":"Road","tile":{"kind":"Curve","rot":3}},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Straight","rot":0}},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Empty"},{"kind":"Road","tile":{"kind":"Curve","rot":0}},{"kind":"Empty"},{"kind":"Obstacle","scenery":"Pine"}],"tray":[{"kind":"Curve","rot":1},{"kind":"Curve","rot":1},{"kind":"Straight","rot":0},{"kind":"Curve","rot":3},{"kind":"Curve","rot":2},{"kind":"Straight","rot":0}],"rotatable":true,"ordered":false,"patrol":[7,6,5,6,7,8],"seed":1401680,"difficulty":5,"score":76}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "sneak",
+              "lines": ["Pim sluipt zacht langs de rover."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De kelder",
+      "scene": "cellar",
+      "items": ["sleutel"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "cellar",
+              "lines": ["De sleutel van de toren ligt in de kelder.", "Hij ligt op een vlotje, ver weg in het water."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben klein en van ijzer.", "Ik pas in een slot.", "Draai mij om.", "Dan gaat de deur open!", "Wat ben ik?"],
+            "answers": [
+              {"picture": "sleutel", "word": "sleutel", "right": true, "item": null},
+              {"picture": "lepel", "word": "lepel", "reply": "Nee, met een lepel eet je soep!"},
+              {"picture": "vork", "word": "vork", "reply": "Nee, met een vork prik je!"},
+              {"picture": "munt", "word": "munt", "reply": "Nee, met een munt koop je iets!"}
+            ]
+          }
+        },
+        {
+          "puzzle": {
+            "engine": "pipes",
+            "level": 2,
+            "seed": 2103,
+            "goal": "Draai de buizen. Laat het water stromen!",
+            "skin": "cellar"
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "raft",
+              "lines": ["Het vlotje drijft naar Pim.", "Pim heeft de sleutel!"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De bibliotheek",
+      "scene": "library",
+      "items": ["kaart"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "library",
+              "lines": ["Wie praat daar?", "Het is een schilderij!", "Het is Oma Hilde, de oma van Hugo.", "„Hugo is een stoute jongen,” zegt ze.", "„Ik help je.”"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik heb veel bladen,", "maar ik ben geen boom.", "Ik heb een rug,", "maar ik loop niet.", "Wat ben ik?"],
+            "answers": [
+              {"picture": "boek", "word": "boek", "right": true},
+              {"picture": "boom", "word": "boom", "reply": "Nee! Lees maar: ik ben geen boom."},
+              {"picture": "stoel", "word": "stoel", "reply": "Nee, een stoel heeft geen bladen!"},
+              {"picture": "hond", "word": "hond", "reply": "Nee, een hond loopt wel!"}
+            ]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "library",
+              "lines": ["„In dit boek zit een tekening,” zegt Oma.", "Maar de tekening is kapot."]
+            }
+          ]
+        },
+        {
+          "puzzle": {
+            "engine": "slide",
+            "level": 3,
+            "seed": 2104,
+            "goal": "Schuif de tekening weer heel!",
+            "skin": "library"
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "drawing",
+              "lines": ["Kijk!", "Barend zit boven in de toren."]
+            },
+            {
+              "scene": "stone",
+              "lines": ["Wat glimt daar op de plank?", "„Dat is de steen van Opa Bram.”", "„Raak hem nooit aan!”"]
+            },
+            {
+              "scene": "library",
+              "lines": ["Oma Hilde kijkt boos naar boven.", "„Pas op met toveren, Hugo!”"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "De toren",
+      "scene": "door",
+      "uses": ["sleutel"],
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "stairs",
+              "lines": ["De sleutel past!", "De trap gaat omhoog."]
+            },
+            {
+              "scene": "door",
+              "lines": ["Boven is nog een deur.", "Daar zit Barend!", "Maar die deur heeft een grendel.", "Aan de kant van Barend."]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik heb een baard,", "maar ik ben geen opa.", "Ik eet alles, ook je sok!", "Ik zeg: mèèè!", "Wie ben ik?"],
+            "answers": [
+              {"picture": "barend", "word": "Barend", "right": true},
+              {"picture": "hugo", "word": "Hugo", "reply": "Nee, Hugo zegt geen mèèè!"},
+              {"picture": "koe", "word": "koe", "reply": "Nee, een koe zegt boe!"},
+              {"picture": "kat", "word": "kat", "reply": "Nee, een kat zegt miauw!"}
+            ]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "door",
+              "lines": ["Pim schuift kaartjes onder de deur.", "Dan loopt Barend naar de grendel."]
+            }
+          ]
+        },
+        {
+          "puzzle": {
+            "engine": "program",
+            "from": "programma/stage-2.json, level 6",
+            "goal": "Eet de appel. Loop dan naar de grendel!",
+            "text": {"bumpTree": "Au! Een kist.", "bumpFence": "Au! De muur."},
+            "skin": "towerRoom",
+            "data": {"width":5,"height":5,"cells":["Grass","Grass","Apple","Tree","Tree","Stable","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass","Grass"],"start":8,"facing":"E","relative":false,"slots":6,"best":4,"seed":1050532465,"difficulty":1,"score":47}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "hug",
+              "lines": ["Klik!", "„Mèèè!”", "Pim en Barend knuffelen."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Weg hier!",
+      "scene": "awake",
+      "steps": [
+        {
+          "story": [
+            {
+              "scene": "awake",
+              "lines": ["„Wie is daar?” roept Hugo.", "Hij is wakker!", "Snel, Pim.", "Niet de trap af!"]
+            }
+          ]
+        },
+        {
+          "riddle": {
+            "lines": ["Ik ben van glas.", "Je kijkt door mij naar buiten.", "Doe mij open,", "dan kun je weg!", "Wat ben ik?"],
+            "answers": [
+              {"picture": "raam", "word": "raam", "right": true},
+              {"picture": "bril", "word": "bril", "reply": "Nee, een bril zit op je neus!"},
+              {"picture": "glas", "word": "glas", "reply": "Nee, uit een glas drink je!"},
+              {"picture": "deur", "word": "deur", "reply": "Nee! Bij de deur staat Hugo!"}
+            ]
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "garden",
+              "lines": ["Pim en Barend klimmen uit het raam.", "Beneden is een sloot met stenen.", "Barend springt als een paard!"]
+            }
+          ]
+        },
+        {
+          "puzzle": {
+            "engine": "chess",
+            "from": "hand-made: a knight and four stepping stones in a ditch (moves checked by `make validate`)",
+            "goal": "Spring op alle stenen! Het kan in 4 sprongen.",
+            "text": {"chessRobber": "Spring met Barend op de steen!", "chessPick": "Tik eerst op Barend!", "chessCantGo": "Zo kan Barend niet springen."},
+            "skin": "garden",
+            "data": {"kind":"Capture","position":{"width":5,"height":5,"rows":[".....","###p#","#p##p","##p##","N...."],"turn":"White","rules":"Solo"},"moves":4,"seed":0,"difficulty":0,"score":0}
+          }
+        },
+        {
+          "story": [
+            {
+              "scene": "jump",
+              "lines": ["Hop, hop, hop!", "Barend springt over de sloot."]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finale": [
+    {
+      "scene": "run",
+      "lines": ["Pim en Barend rennen naar huis."]
+    },
+    {
+      "scene": "stamp",
+      "lines": ["Hugo stampt boos op de grond.", "„Ik word de engste van allemaal!”"]
+    },
+    {
+      "scene": "spell",
+      "lines": ["Hij roept een toverspreuk…", "Boem!"]
+    },
+    {
+      "scene": "out",
+      "lines": ["Alle kaarsen in zijn huis gaan uit."]
+    },
+    {
+      "scene": "spookhuis",
+      "lines": ["Wat er toen gebeurde?", "Kijk maar in het spookhuis van Hugo!"],
+      "goto": {"mode": "spookhuis", "label": "Naar het spookhuis"}
+    }
+  ]
+}

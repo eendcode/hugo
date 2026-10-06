@@ -38,6 +38,7 @@ const STRINGS = {
 
     chooseGame: 'Wat gaan we spelen?',
     modes: {
+      saga: 'Het grote verhaal',
       duinkapel: 'De Duinkapel',
       dorp: 'Verdedig het dorp',
       spookhuis: 'Het spookhuis van Hugo',
@@ -152,6 +153,42 @@ const STRINGS = {
     cartCantGo: 'Daar kan de kar niet heen.',
     cartStuck: 'Deze kar zit vast.',
 
+    // Story mode: Planken (chapter 1.3). Easy Dutch for a beginning reader.
+    goalPlanks: 'Timmer de gaten dicht!',
+    pickPlank: 'Kies eerst een plank.',
+    noGap: 'Daar is geen gat.',
+    plankBack: 'Die plank moet ergens anders.',
+    plank: 'Plank',
+    // Slot (chapter 2.1): the lock with three wheels.
+    goalLock: 'Tel goed. Draai de wieltjes!',
+    lockWheel: 'Wieltje {n}',
+    lockOpen: 'Open',
+    lockWrong: 'Nog niet goed. Tel nog eens!',
+    lockPress: 'Het klopt! Druk op Open.',
+    // Wat is er anders? (chapter 3.1) and the suspect board (Book 3).
+    goalSpot: 'Wat is er anders? Tik het aan!',
+    spotWrong: 'Dat is hetzelfde. Kijk nog eens!',
+    spotSquare: 'Vakje {n}',
+    yesterday: 'Gisteren',
+    today: 'Vandaag',
+    suspectsTitle: 'Wie was het?',
+    suspectStays: 'Nee, die blijft nog even.',
+    // The Nachtbok-meter and the bokje's name (Book 4).
+    meterSize: 'Zo groot als {w}',
+    meterSmall: 'Zo klein als {w}!',
+    goodPick: 'Wat een mooie naam!',
+
+    chooseBook: 'Kies een boek',
+    book: 'Boek {n}',
+    bookSoon: 'Komt nog',
+    bookLocked: 'Eerst boek {n}',
+    bookDone: 'Uit!',
+    allBooksDone: 'Alle boeken zijn uit. Hoera!',
+    chapter: 'Hoofdstuk {n}',
+    riddleWrong: 'Nee, dat is het niet. Lees nog eens!',
+    riddleLeft: 'Goed zo! Nog {n}!',
+    bag: 'Tas',
+
     stage: 'Etappe {n}',
     levelOf: '{n} van {total}',
     freePlay: 'Vrij spel · niveau {d}',
@@ -233,6 +270,7 @@ const STRINGS = {
 
     chooseGame: 'What shall we play?',
     modes: {
+      saga: 'The big story',
       duinkapel: 'The Dune Chapel',
       dorp: 'Defend the village',
       spookhuis: "Hugo's haunted house",
@@ -347,6 +385,38 @@ const STRINGS = {
     cartCantGo: 'The cart cannot go there.',
     cartStuck: 'This cart is stuck.',
 
+    goalPlanks: 'Nail the gaps shut!',
+    pickPlank: 'Pick a plank first.',
+    noGap: 'There is no gap there.',
+    plankBack: 'That plank goes somewhere else.',
+    plank: 'Plank',
+    goalLock: 'Count carefully. Turn the wheels!',
+    lockWheel: 'Wheel {n}',
+    lockOpen: 'Open',
+    lockWrong: 'Not yet. Count again!',
+    lockPress: 'That is right! Press Open.',
+    goalSpot: 'What is different? Tap it!',
+    spotWrong: 'That is the same. Look again!',
+    spotSquare: 'Square {n}',
+    yesterday: 'Yesterday',
+    today: 'Today',
+    suspectsTitle: 'Who was it?',
+    suspectStays: 'No, that one stays for now.',
+    meterSize: 'As big as {w}',
+    meterSmall: 'As small as {w}!',
+    goodPick: 'What a lovely name!',
+
+    chooseBook: 'Choose a book',
+    book: 'Book {n}',
+    bookSoon: 'Coming soon',
+    bookLocked: 'Book {n} first',
+    bookDone: 'Finished!',
+    allBooksDone: 'You read every book. Hooray!',
+    chapter: 'Chapter {n}',
+    riddleWrong: 'No, that is not it. Read it again!',
+    riddleLeft: 'Well done! {n} more!',
+    bag: 'Bag',
+
     stage: 'Stage {n}',
     levelOf: '{n} of {total}',
     freePlay: 'Free play · level {d}',
@@ -410,6 +480,17 @@ export function t(key, vars = {}) {
   const value = STRINGS[lang][key] ?? STRINGS.nl[key] ?? key;
   if (typeof value !== 'string') return value;
   return value.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : `{${k}}`));
+}
+
+/**
+ * Message `key`, or the story's own words for it: `text` is a play screen's
+ * opts.text when the story mode hosts it (e.g. {dame: "…"}). The story's
+ * words may use the same {vars} as the message.
+ */
+export function textOr(text, key, vars = {}) {
+  const own = text?.[key];
+  if (own == null) return t(key, vars);
+  return own.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : `{${k}}`));
 }
 
 export function treasureName(order) {

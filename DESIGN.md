@@ -241,6 +241,7 @@ A single focus/cursor model serves both input methods.
   - `"Terug"`
   - `"Moeilijker"` / `"Makkelijker"`
 - Icons carry the meaning; text is a bonus for reading practice.
+- **The exception: the story mode** (*Het grote verhaal*, added later) is meant to be read. Its story pages and riddles are written in easy Dutch for a child who is starting to read (short sentences, short words, riddles that end in "Wat ben ik?"), with a parent helping. The puzzles inside it still need no reading. See `STORY.md`.
 
 ---
 

@@ -3,7 +3,7 @@
 // Rules, hints and the engine come from the Rust core (chess_* functions).
 
 import { icon } from '../../art.js';
-import { t } from '../../i18n.js';
+import { t, textOr } from '../../i18n.js';
 import * as audio from '../../audio.js';
 import { app, sleep, winOverlay } from '../../shell.js';
 import { piece, tree } from './art.js';
@@ -14,18 +14,48 @@ const GAMES = new Set(['PawnRace', 'Endgame', 'Battle']);
 const isWhite = (ch) => /[KQRBNP]/.test(ch);
 const isBlack = (ch) => /[kqrbnp]/.test(ch);
 
+/** The board's art; a story skin (opts.art) can replace any of these. */
+const ART = {
+  piece,
+  tree,
+  /** One square; `start` is what stood there at the start of the puzzle. */
+  square: (dark, start) => `<rect class="${dark ? 'dark' : 'light'}" width="100" height="100"/>`,
+  /** Drawn on a square whose robber has been taken (none by default). */
+  taken: null,
+};
+
+/**
+ * Which piece stands where, as its place among the same pieces at the start
+ * (reading order): the second white rook is ('R', 1) wherever it goes. A
+ * skin's piece(letter, k) can tell two rooks apart this way.
+ */
+function startOrder(pos) {
+  const seen = {};
+  return pos.rows.join('').split('').map((ch) => (ch === '.' || ch === '#' ? null : (seen[ch] = (seen[ch] ?? -1) + 1)));
+}
+
 export class ChessScreen {
   /**
-   * opts: level (the puzzle), label, strength (0–3), onWin(stars), onNext(), onReplay(), onHome(), onMenu()
+   * opts: level (the puzzle), label, strength (0–3), onWin(stars), onNext(), onReplay(), onHome(), onMenu(),
+   * and optionally, when the story mode hosts the screen: goal (replaces the
+   * goal line; in a mate in two only until the first move works), text (the
+   * story's words for chessRobber, chessPick, chessCantGo, goalMate1,
+   * mateEscape, mateEscapeLater, mateTaken (a wrong move in a mate puzzle
+   * whose answer takes a villager), and in a game check, stalemate and
+   * robbersWin), backdrop (a 1600×900 SVG scene behind it) and art (see
+   * ART; piece(letter, k) also gets the piece's place k among the same
+   * pieces at the start, see startOrder).
    */
   constructor(root, opts) {
     this.root = root;
     this.opts = opts;
+    this.art = { ...ART, ...opts.art };
     this.puzzle = opts.level;
     this.kind = this.puzzle.kind;
     this.core = app.core;
     this.input = app.input;
     this.pos = structuredClone(this.puzzle.position);
+    this.ids = startOrder(this.pos);
     this.w = this.pos.width;
     this.h = this.pos.height;
     this.mateLeft = this.puzzle.moves;
@@ -88,10 +118,11 @@ export class ChessScreen {
     for (let i = 0; i < w * h; i++) {
       const [x, y] = this.xy(i);
       const dark = (Math.floor(i / w) + (i % w)) % 2 === 1;
-      squares.push(`<g class="sq" data-nav="c${i}" transform="translate(${x} ${y})"><rect class="${dark ? 'dark' : 'light'}" width="100" height="100"/></g>`);
+      squares.push(`<g class="sq" data-nav="c${i}" transform="translate(${x} ${y})">${this.art.square(dark, this.at(i, this.puzzle.position))}</g>`);
     }
     this.root.innerHTML = `
-      <section class="play chess" style="--n: ${Math.max(w, h)}">
+      <section class="play chess${this.opts.backdrop ? ' skinned' : ''}" style="--n: ${Math.max(w, h)}">
+        ${this.opts.backdrop ? `<svg class="scene play-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${this.opts.backdrop}</svg>` : ''}
         <header class="play-head">
           <div class="play-label">${this.opts.label}</div>
           <div class="goal" role="status" aria-live="polite"></div>
@@ -100,6 +131,7 @@ export class ChessScreen {
           <svg class="board" viewBox="-8 -8 ${w * 100 + 16} ${h * 100 + 16}" role="grid" aria-label="${t('modes').dorp}">
             <rect x="-8" y="-8" width="${w * 100 + 16}" height="${h * 100 + 16}" rx="14" fill="#5a3c22"/>
             <g class="squares">${squares.join('')}</g>
+            <g class="taken-marks"></g>
             <g class="marks"></g>
             <g class="pieces"></g>
             <g class="dots"></g>
@@ -117,9 +149,13 @@ export class ChessScreen {
           </div>
         </aside>
       </section>`;
+    // Kept, so a move that plays out after Kaart (see onActivate) only touches the old screen.
+    this.playEl = this.root.querySelector('.play');
+    this.undoEl = this.root.querySelector('[data-nav="b-undo"]');
     this.svg = this.root.querySelector('.board');
     this.piecesG = this.svg.querySelector('.pieces');
     this.marksG = this.svg.querySelector('.marks');
+    this.takenG = this.svg.querySelector('.taken-marks');
     this.dotsG = this.svg.querySelector('.dots');
     this.fx = this.svg.querySelector('.fx');
     this.ring = this.svg.querySelector('.ring');
@@ -139,13 +175,16 @@ export class ChessScreen {
 
   render() {
     const items = [];
+    const taken = [];
     for (let i = 0; i < this.w * this.h; i++) {
       const ch = this.at(i);
-      if (ch === '.') continue;
       const [x, y] = this.xy(i);
-      items.push(`<g class="pc" data-sq="${i}" style="transform: translate(${x}px, ${y}px)"><g transform="translate(5 5) scale(.9)">${ch === '#' ? tree() : piece(ch)}</g></g>`);
+      if (this.art.taken && isBlack(this.at(i, this.puzzle.position)) && !isBlack(ch)) taken.push(`<g transform="translate(${x} ${y})">${this.art.taken()}</g>`);
+      if (ch === '.') continue;
+      items.push(`<g class="pc" data-sq="${i}" style="transform: translate(${x}px, ${y}px)"><g transform="translate(5 5) scale(.9)">${ch === '#' ? this.art.tree() : this.art.piece(ch, this.ids[i] ?? 0)}</g></g>`);
     }
     this.piecesG.innerHTML = items.join('');
+    this.takenG.innerHTML = taken.join('');
     this.renderMarks();
     this.renderButtons();
     if (this.counterEl) this.counterEl.innerHTML = `${icon('hoof')}<span>${this.moveCount}</span><small>/ ${this.puzzle.moves}</small>`;
@@ -178,11 +217,11 @@ export class ChessScreen {
           : `<circle class="dot take" cx="${x + 50}" cy="${y + 50}" r="44"/>`;
       })
       .join('');
-    this.root.querySelector('.play').classList.toggle('has-selection', this.selected !== null);
+    this.playEl.classList.toggle('has-selection', this.selected !== null);
   }
 
   renderButtons() {
-    this.root.querySelector('[data-nav="b-undo"]').classList.toggle('dim', !this.history.length);
+    this.undoEl.classList.toggle('dim', !this.history.length);
   }
 
   status(pos = this.pos) {
@@ -204,6 +243,8 @@ export class ChessScreen {
   }
 
   goalText() {
+    // A story's goal line stands until a mate in two is half done.
+    if (this.opts.goal && !(this.kind === 'Mate' && this.mateLeft < this.puzzle.moves)) return this.opts.goal;
     switch (this.kind) {
       case 'Capture': {
         const kinds = new Set(this.pos.rows.join('').replace(/[^KQRBNP]/g, ''));
@@ -213,7 +254,7 @@ export class ChessScreen {
       case 'SafeCapture':
         return t('goalSafe');
       case 'Mate':
-        return this.mateLeft === 1 ? t('goalMate1') : t('goalMateN', { n: this.mateLeft });
+        return this.mateLeft === 1 ? textOr(this.opts.text, 'goalMate1') : t('goalMateN', { n: this.mateLeft });
       case 'PawnRace':
         return t('goalRace');
       case 'Endgame':
@@ -252,6 +293,8 @@ export class ChessScreen {
 
   /** Slide the piece on `from` to `to`; a captured piece fades out. */
   async animate(from, to) {
+    this.ids[to] = this.ids[from];
+    this.ids[from] = null;
     const el = this.piecesG.querySelector(`[data-sq="${from}"]`);
     const victim = this.piecesG.querySelector(`[data-sq="${to}"]`);
     if (!el) return;
@@ -265,13 +308,14 @@ export class ChessScreen {
   // ---------- actions ----------
 
   onActivate(el) {
+    const id = el.dataset.nav;
+    // Kaart always works, also while a move plays out (a win still counts, see win()).
+    if (id === 'b-home') return this.opts.onHome();
     if (this.busy) return;
     audio.unlock();
-    const id = el.dataset.nav;
     if (id.startsWith('c')) this.onSquare(Number(id.slice(1)));
     else if (id === 'b-undo') this.undo();
     else if (id === 'b-hint') this.hint();
-    else if (id === 'b-home') this.opts.onHome();
     else if (id === 'b-menu') this.opts.onMenu();
   }
 
@@ -304,13 +348,14 @@ export class ChessScreen {
       return;
     }
     this.wiggle(i);
-    if (isBlack(ch)) this.say(t('chessRobber'));
-    else if (this.selected !== null) this.say(t('chessCantGo'), 'warn');
-    else this.say(t('chessPick'));
+    const text = (key) => textOr(this.opts.text, key);
+    if (isBlack(ch)) this.say(text('chessRobber'));
+    else if (this.selected !== null) this.say(text('chessCantGo'), 'warn');
+    else this.say(text('chessPick'));
   }
 
   snapshot() {
-    return { pos: this.pos, mateLeft: this.mateLeft, moveCount: this.moveCount, lastMove: this.lastMove };
+    return { pos: this.pos, ids: [...this.ids], mateLeft: this.mateLeft, moveCount: this.moveCount, lastMove: this.lastMove };
   }
 
   restore(s) {
@@ -374,12 +419,13 @@ export class ChessScreen {
         if (st.outcome?.reason === 'Mate') return this.win();
         const reply = this.call('chess_defend', this.json(), Math.max(1, this.mateLeft - 1));
         if (!reply) {
-          this.say(t('stalemate'), 'warn');
+          this.say(textOr(this.opts.text, 'stalemate'), 'warn');
           audio.play('whoosh');
           await sleep(1600);
           return this.restore(before);
         }
         await sleep(350);
+        const took = isWhite(this.at(reply.to));
         await this.reply(reply);
         if (this.mateLeft > 1 && this.core.chess_forces_mate(this.json(), this.mateLeft - 1)) {
           this.history.push(before);
@@ -388,7 +434,9 @@ export class ChessScreen {
           this.say(this.goalText(), 'good');
           return;
         }
-        this.say(this.mateLeft === 1 ? t('mateEscape') : t('mateEscapeLater'), 'warn');
+        // A story can say what the child sees when the reply takes a piece (text.mateTaken).
+        const why = took && this.opts.text?.mateTaken ? 'mateTaken' : this.mateLeft === 1 ? 'mateEscape' : 'mateEscapeLater';
+        this.say(textOr(this.opts.text, why), 'warn');
         audio.play('whoosh');
         await sleep(1700);
         if (this.destroyed) return;
@@ -401,7 +449,7 @@ export class ChessScreen {
         this.history.push(before);
         this.renderButtons();
         if (st.outcome) return this.gameOver(st.outcome);
-        if (st.check) this.say(t('check'));
+        if (st.check) this.say(textOr(this.opts.text, 'check'));
         await sleep(300);
         const reply = this.call('chess_reply', this.json(), this.opts.strength, (Math.random() * 0xffffffff) >>> 0);
         if (!reply || this.destroyed) return;
@@ -454,10 +502,12 @@ export class ChessScreen {
   }
 
   async win() {
+    // Left (Kaart) during the winning move: it still counts as won.
+    if (this.destroyed) return this.opts.onWin?.(this.stars());
     this.busy = true;
     this.say(t('wellDone'), 'good');
     audio.play('win');
-    this.root.querySelector('.play').classList.add('won');
+    this.playEl.classList.add('won');
     const stars = this.stars();
     await this.opts.onWin?.(stars);
     await sleep(900);
@@ -473,8 +523,9 @@ export class ChessScreen {
   /** A game ended: a win celebrates; otherwise offer undo or a new try. */
   gameOver(outcome) {
     if (outcome.winner === 'White') return this.win();
+    if (this.destroyed) return;
     audio.play('whoosh');
-    const text = outcome.winner ? t('robbersWin') : t('stalemate');
+    const text = textOr(this.opts.text, outcome.winner ? 'robbersWin' : 'stalemate');
     this.say(text, 'warn');
     const el = document.createElement('div');
     el.className = 'overlay';

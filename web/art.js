@@ -37,7 +37,7 @@ export const DEFS = `
   </defs>
 </svg>`;
 
-const ROAD_PATHS = {
+export const ROAD_PATHS = {
   Straight: 'M50 0V100',
   Curve: 'M50 0A50 50 0 0 0 100 50',
   TJunction: 'M50 0V100M50 50H100',

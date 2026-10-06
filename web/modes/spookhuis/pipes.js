@@ -85,13 +85,16 @@ export class Pipes {
 
   html() {
     const size = this.n * 100;
-    return `<svg class="pipes board" viewBox="-110 -10 ${size + 120} ${size + 20}">
-      <rect x="-10" y="-10" width="${size + 20}" height="${size + 20}" rx="14" fill="#1d2233"/>
+    // A story skin (ctx.art, see the saga's engines.js) may draw the board and
+    // pump its own way, boardArt(n, source), in a viewBox of its own, box(n).
+    const art = this.ctx.art;
+    return `<svg class="pipes board" viewBox="${art?.box?.(this.n).join(' ') ?? `-110 -10 ${size + 120} ${size + 20}`}">
+      ${art?.boardArt?.(this.n, this.source) ?? `<rect x="-10" y="-10" width="${size + 20}" height="${size + 20}" rx="14" fill="#1d2233"/>
       <g class="pump" transform="translate(-100 ${Math.floor(this.source / this.n) * 100})">
         <rect x="10" y="20" width="60" height="60" rx="10" fill="#4f6fa0" stroke="#1b1330" stroke-width="4"/>
         <circle cx="40" cy="50" r="16" fill="#9fd8ff"/>
         <path d="M70 50H100" stroke="#1b1330" stroke-width="30"/><path d="M70 50H100" stroke="#3aa0e0" stroke-width="18"/>
-      </g>
+      </g>`}
       <g class="cells"></g>
     </svg>`;
   }
